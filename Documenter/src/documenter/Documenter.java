@@ -37,8 +37,8 @@ public class Documenter {
     private static final String AppVersion = "v12.0 (16/08/2014)";
     private static final String AppCopyright = "FinancialForce.com © 2014";
 
-    private boolean bGlobalAbort = false;
-    private String sGlobalDebug = "";
+    private boolean globalAbort = false;
+    private String globalAbortText = "";
 
     private ConfigModel _configModel;
     public String sFilename = "";
@@ -75,9 +75,12 @@ public class Documenter {
     
     private static final String DefFileExt = ".htm";
 
-    /**
-     * @param args the command line arguments
-     */
+    
+    //**************************************************************************
+    // Routine: Main
+    // @param args the command line arguments
+    //  
+    //**************************************************************************
     public static void main(String[] args) {
         Documenter ceEngine = new Documenter();
 
@@ -96,9 +99,9 @@ public class Documenter {
         //...and *start* (by loading the configuration)
         ceEngine.loadConfiguration(configFilename);
 
-        if (ceEngine.bGlobalAbort) //Do we have a global abort?
+        if (ceEngine.globalAbort) //Do we have a global abort?
         {
-            System.out.printf("\n***ABORT***\n\nDebug: %s\n", ceEngine.sGlobalDebug);	//Yes - Output *why*
+            System.out.printf("\n***ABORT***\n\nDebug: %s\n", ceEngine.globalAbortText);
         } else {																				//No - Run the rest of the process
 //            if (args.length >= 2) //Do we have a second parameter (override output path)? 
 //            {
@@ -113,36 +116,49 @@ public class Documenter {
         System.out.printf("Generation Completed: %s\n", new Date().toString());
     }
 
-    /**
-     * Given an input path, this routine looks for .CLS files, scans them
-     * (adding the results to the alItems arraylist) and then generates the
-     * output documentation files
-     */
+    //**************************************************************************
+     // Given an input path, this routine looks for .CLS files, scans them
+     // (adding the results to the alItems arraylist) and then generates the
+     // output documentation files
+     //**************************************************************************
     public void generate() {
         
         // Create the output structure
         createOutputStructure(_configModel.OutputFolder);
         
-        scanFiles();
-
+        List<FilenameVersionFf> latestVersionFileList = scanFiles();
+        if(latestVersionFileList.isEmpty()){
+            globalAbort = true;
+            globalAbortText = "Could not find any files to process";
+            DebugOut( String.format("ABORTED: %s", globalAbortText));
+            return;
+        }
+        processSelectedFiles(latestVersionFileList);
+        
+        GenerateOutputDocs(TypesFolder);
         generateFiles();
     }
 
-    /*
-    
-     */
+    //**************************************************************************
+    // Method: loadConfiguration
+    // 
+    //
+    //**************************************************************************
     private void loadConfiguration(String configurationFileName) {
         _configModel = ConfigurationSvc.LoadConfigFile(configurationFileName);
     }
 
-    /*
-    
-    */
-    private void scanFiles() {
-        Integer iTotalFiles = 0;
-        int notScanned = 0;
+    //**************************************************************************
+    // Method: scanFile
+    // Scan for the file that we are interested in and select the latest versions 
+    //
+    //**************************************************************************
+    private List<FilenameVersionFf> scanFiles() {
+        Integer totalFiles = 0;
         String sFilename = "";
 
+        List<FilenameVersionFf> latestVersionFileList = new ArrayList<FilenameVersionFf>();
+        
         alItems.clear();
 
         populateSnippetText();
@@ -168,15 +184,13 @@ public class Documenter {
 
         File[] listOfFiles = f.listFiles(textFilter);
 
-        if (listOfFiles == null) //Do we have any files?
+        //Do we have any files?
+        if (listOfFiles == null)
         {
-            System.out.println("Invalid source path");		//Nope - Complain
+            System.out.println("Invalid source path");
         } else {
-
-            List<FilenameVersionFf> latestVersionFileList = new ArrayList<FilenameVersionFf>();;
-
             for (int i = 0; i < listOfFiles.length; i++) //Iterate through the file list...
-            {
+                        {
                 //Is this item a file?
                 if (listOfFiles[i].isFile()) {
                     sFilename = listOfFiles[i].getName();
@@ -213,29 +227,38 @@ public class Documenter {
                         }
                     }
                 }
-
                 dumpFiles(latestVersionFileList);
 
-                if (bGlobalAbort) //Did we abort?
+                if (globalAbort) //Did we abort?
                 {
-                    //Yes - Get out
                     break;
                 }
             }
+        }
+        return latestVersionFileList;
+    }
 
-            List<String> excludeList = _configModel.AllExcludeFiles;
+    //**************************************************************************
+    // Routine: processSelectedFiles
+    //
+    //**************************************************************************
+    private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList){
+        Integer totalFiles = 0;
+        int notScanned = 0;
+        
+        List<String> excludeList = _configModel.AllExcludeFiles;
             for (FilenameVersionFf fileName : latestVersionFileList) {
                 String name = fileName.Name;
                 if (name != null) {
                     name = name.toLowerCase().trim();
 
-                    String testCatch = "CODAAPIGeneralLedgerAccountTypes";
-                    if (name.toUpperCase().startsWith(testCatch.toUpperCase())) {
-                        DebugOut(name);
-                    }
+//                    String testCatch = "CODAAPIGeneralLedgerAccountTypes";
+//                    if (name.toUpperCase().startsWith(testCatch.toUpperCase())) {
+//                        DebugOut(name);
+//                    }
 
                     if (!excludeList.contains(name)) {
-                        iTotalFiles++;
+                        totalFiles++;
                         scanFile(fileName.FullName);
                     } else {
                         notScanned++;
@@ -243,23 +266,13 @@ public class Documenter {
                     }
                 }
             }
-            //...scan it
-            //iTotalFiles = iTotalFiles + 1;
-            //ScanFile(sFilename);
-
-            System.out.println();	//Add a blank line to the output (to make it more readable)
-
-            if (!bGlobalAbort) //Did we abort?
-            {
-                
-            }
-            if (!bGlobalAbort) //Did we abort?
-            {
-                GenerateOutputDocs(_configModel.OutputFolder);		//Output the final documents
-            }
-        }
     }
-
+    
+    //**************************************************************************
+    // Routine: scanFile
+    // Scan for the file that we are interested in and select the latest versions 
+    //
+    //**************************************************************************
     private void scanFile(String filename) {
         String fileData = "";
         String chunk = "";
@@ -284,14 +297,14 @@ public class Documenter {
 
             inFile.close();
         } catch (FileNotFoundException e) {
-            sGlobalDebug = "FileNotFound (Scan): " + filename + " Error: " + e.getMessage();
-            bGlobalAbort = true;
+            globalAbortText = "FileNotFound (Scan): " + filename + " Error: " + e.getMessage();
+            globalAbort = true;
         } catch (IOException e) {
-            sGlobalDebug = "IOException (Scan): " + filename + " Error: " + e.getMessage();
-            bGlobalAbort = true;
+            globalAbortText = "IOException (Scan): " + filename + " Error: " + e.getMessage();
+            globalAbort = true;
         }
 
-        if (bGlobalAbort) //Have we aborted?
+        if (globalAbort) //Have we aborted?
         {
             return;				//Yes - Get out
         }
@@ -308,7 +321,7 @@ public class Documenter {
         fileData = fileData.replace("\n", " \n ");
 
         //Loop until we run out of data (or get told to abort)...
-        while (!fileData.trim().equals("") && !bAbort && !bGlobalAbort) {
+        while (!fileData.trim().equals("") && !bAbort && !globalAbort) {
             //To stop ourselves form getting stuck in loops, we'll keep a track
             //of the data to see if it changes across iterations. If it *doesn't*
             //then we can spot it and do something about it
@@ -378,12 +391,12 @@ public class Documenter {
         if (bAbort) //Did we abort?
         {
             //Yes - Set the global flag (so that we don't process anything else anywhere else)
-            bGlobalAbort = true;
-            sGlobalDebug = debugText;
+            globalAbort = true;
+            globalAbortText = debugText;
         }
     }
     
-//**************************************************************************
+    //**************************************************************************
     // Routine: CreateOutputStructure
     // Outline: When called, this routine attempts to create the output folder
     //			structure used to hold the generated  
