@@ -43,7 +43,7 @@ public class Documenter {
     private boolean globalAbort = false;
     private String globalAbortText = "";
 
-    private ConfigModel _configModel;
+    private ConfigModel configModel;
 
     private final java.util.ArrayList<ItemData> alItems = new java.util.ArrayList<>();
     private final java.util.ArrayList<ItemUsage> alItemUsage = new java.util.ArrayList<>();
@@ -125,7 +125,7 @@ public class Documenter {
     public void generate() {
         
         // Create the output structure
-        createOutputStructure(_configModel.OutputFolder);
+        createOutputStructure(configModel.OutputFolder);
         
         List<FilenameVersionFf> latestVersionFileList = scanFiles();
         if(latestVersionFileList.isEmpty()){
@@ -136,7 +136,12 @@ public class Documenter {
         }
         processSelectedFiles(latestVersionFileList);
         
-        generateOutputDocs(TypesFolder);
+        if( (processedChunks == 254 || outputtedChunks == 3813) == false){
+            globalAbort = true;
+            globalAbortText = "Processed file count is wrong";
+            debugOut( String.format("ABORTED: %s", globalAbortText));
+            return;
+        }
         generateFiles();
         
         String message = String.format("Chunks: Processed %s Outputted %s", processedChunks, outputtedChunks);
@@ -150,7 +155,7 @@ public class Documenter {
     //
     //**************************************************************************
     private void loadConfiguration(String configurationFileName) {
-        _configModel = ConfigurationSvc.LoadConfigFile(configurationFileName);
+        configModel = ConfigurationSvc.LoadConfigFile(configurationFileName);
     }
 
     //**************************************************************************
@@ -167,12 +172,12 @@ public class Documenter {
 
         populateSnippetText();
 
-        if (!_configModel.SourceFolder.endsWith("\\")) //Does our input folder end with a '\'?
+        if (!configModel.SourceFolder.endsWith("\\")) //Does our input folder end with a '\'?
         {
-            _configModel.SourceFolder += "\\";
+            configModel.SourceFolder += "\\";
         }
         //Get a list of files in the input folder
-        File f = new File(_configModel.SourceFolder);
+        File f = new File(configModel.SourceFolder);
 
         FilenameFilter textFilter = new FilenameFilterImpl();
 
@@ -234,7 +239,7 @@ public class Documenter {
         Integer totalFiles = 0;
         int notScanned = 0;
         
-        List<String> excludeList = _configModel.AllExcludeFiles;
+        List<String> excludeList = configModel.AllExcludeFiles;
             for (FilenameVersionFf fileName : latestVersionFileList) {
                 String name = fileName.Name;
                 if (name != null) {
@@ -291,7 +296,7 @@ public class Documenter {
             return;				//Yes - Get out
         }
         //Remove the scan path
-        filename = filename.substring(_configModel.SourceFolder.length());
+        filename = filename.substring(configModel.SourceFolder.length());
         //Check whether the filename starts with '\'...
         if (filename.startsWith("\\")) {
             //...and remove it if it does
@@ -411,16 +416,41 @@ public class Documenter {
         System.out.println("Done");
     }
     
+    //**************************************************************************
+    // Method: generateFiles
+    // 
+    //
+    //**************************************************************************
+    private void generateFiles() {
+        if (alItems.isEmpty())
+            {
+                debugOut("There is no class data to use in the generation process. Please check your input paramaters and scan classes again.");
+            }
+            else
+            {
+                configModel.AlHtml.add(configModel.HtmlPreEnumTable);
+//                configModel.HtmlPreEnumTable = FormatPlaceholders(configModel.AlHtml[0].toString(), null);
+
+                if ((!"".equals(configModel.Namespace.trim())) && !configModel.Namespace.endsWith("."))
+                {
+                    configModel.Namespace = configModel.Namespace + ".";
+                }
+                                
+                generateOutputDocs(configModel.OutputFolder);
+            }
+    }
+
+    //**************************************************************************
+    // Method: generateOutputDocs
+    // 
+    //
+    //**************************************************************************
     private void generateOutputDocs(String OutputFolder) {
 
     }
-
-    private void generateFiles() {
-
-    }
-
+    
     private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
-        String filesProcessedFileName = _configModel.OutputFolder + "\\FilesProcessed.txt";
+        String filesProcessedFileName = configModel.OutputFolder + "\\FilesProcessed.txt";
 
         //Does the output file already exist?
         if ((new File(filesProcessedFileName)).isFile()) {
@@ -451,7 +481,7 @@ public class Documenter {
     }
 
     private void debugOut(String message) {
-        String debugFileName = _configModel.OutputFolder + "\\Debug.txt";
+        String debugFileName = configModel.OutputFolder + "\\Debug.txt";
 
         try {
             Date date = new Date();
@@ -796,8 +826,8 @@ public class Documenter {
                     }
                 }
 
-                if ((((str.equals("PUBLIC")) && _configModel.ShowPublic) || ((str.equals("PRIVATE")) && _configModel.ShowPrivate)) 
-                    || ((((str.equals("GLOBAL")) && _configModel.ShowGlobal) || ((str.equals("WEBSERVICE")) && _configModel.ShowWebService)) || (str.equals("N/A"))))
+                if ((((str.equals("PUBLIC")) && configModel.ShowPublic) || ((str.equals("PRIVATE")) && configModel.ShowPrivate)) 
+                    || ((((str.equals("GLOBAL")) && configModel.ShowGlobal) || ((str.equals("WEBSERVICE")) && configModel.ShowWebService)) || (str.equals("N/A"))))
                 {
                     ItemData newItem = new ItemData();
                     newItem.sName = "";
@@ -1248,6 +1278,46 @@ public class Documenter {
     }
 
     //**************************************************************************
+    // Method: FormatPlaceholders
+    // This routine takes the supplied text and converts any placeholders ('[%<Name>%]' to
+    // uppercase (making them easier to match in the future)
+    // 
+    //**************************************************************************
+    private String FormatPlaceholders(String sData, ArrayList<String> alDocPlaceholders) {
+        String sPlaceholder = "";
+        StringBuilder sbResult = new StringBuilder();
+
+        while (sData.contains("[%")) //Loop until we run out of placeholders...
+        {
+            //Add everything *up to* the placeholder to the output data
+            sbResult.append(sData.substring(0, sData.indexOf("[%")));
+
+            //Remove everything *up to* the placeholder form the source data
+            sData = sData.substring(sData.indexOf("[%"));
+
+            if (sData.contains("%]")) //If the source data contains the *end* of a placeholder...
+            { //...extract the placeholder
+                //Extract the placeholder and convert it to uppercase
+                sPlaceholder = sData.substring(0, sData.indexOf("%]") + 2).toUpperCase().trim();
+                sData = sData.substring(sData.indexOf("%]") + 2);
+
+                sbResult.append(sPlaceholder); //Add the placeholder to the output data
+
+                if (alDocPlaceholders != null) //Are we building a list of 'DOC' placeholders?
+                { 									//Yes - Add this to the list (Assuming that it's a 'DOC' placeholder of course)
+                    if (sPlaceholder.startsWith("[%DOC:") && (alDocPlaceholders.indexOf(sPlaceholder) < 0)) {
+                        alDocPlaceholders.add(sPlaceholder);
+                    }
+                }
+            }
+        }
+
+        sbResult.append(sData); //Add any remaining data to the output
+
+        return sbResult.toString();
+    }
+    
+    //**************************************************************************
     // Class:   RefObject
     // Outline: Class used to simulate the ability to pass arguments by 
     //			reference in Java.
@@ -1270,7 +1340,7 @@ public class Documenter {
         public boolean accept(File dir, String name) {
             String lowercaseName = name.toLowerCase();
             //if (lowercaseName.startsWith("codaapi") && lowercaseName.endsWith(".cls"))
-            return lowercaseName.startsWith(_configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls");
+            return lowercaseName.startsWith(configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls");
         }
     }
 }
