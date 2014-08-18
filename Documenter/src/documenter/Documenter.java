@@ -31,6 +31,9 @@ import java.util.Map;
  */
 public class Documenter {
 
+    private Integer outputtedChunks = 0;
+    private Integer processedChunks = 0;
+    
     private static final String NewLine = "\n";
 
     private static final String AppName = "FinancialForce.com Documentation Generator";
@@ -41,15 +44,12 @@ public class Documenter {
     private String globalAbortText = "";
 
     private ConfigModel _configModel;
-    public String sFilename = "";
-    public String sChunkData = "";
-    public String sChunkType = "";
-    private java.util.ArrayList<ItemData> alItems = new java.util.ArrayList<ItemData>();
-    private java.util.ArrayList<ItemUsage> alItemUsage = new java.util.ArrayList<ItemUsage>();
-    private Map<String, String> snippetText = new HashMap<String, String>();
 
-       private static final String ctVar = "Variables";
-    
+    private final java.util.ArrayList<ItemData> alItems = new java.util.ArrayList<>();
+    private final java.util.ArrayList<ItemUsage> alItemUsage = new java.util.ArrayList<>();
+    private final Map<String, String> snippetText = new HashMap<>();
+
+    private static final String ctVar = "Variables";
     private static final String ctUnknown = "Unknown";
     private static final String ctTest = "Tests";
     private static final String ctMethod = "Methods";
@@ -57,22 +57,22 @@ public class Documenter {
     private static final String ctInterfaces = "Interfaces";
     private static final String ctClass = "Classes/Types";
     private static final String ctEnum = "Enumerations";
-    
-    private String IndexFolder = "Content";
-    private String TocFolder = "Projects\\Tocs";
-    
-    private String EnumsFolder = "Content\\Reference\\Enums";
-    private String ServicesFolder = "Content\\Reference\\Services";
-    private String TypesFolder = "Content\\Reference\\Types";
-    private String TestsFolder = "Content\\Reference\\Tests";
-    private String UnknownFolder = "Content\\Reference\\Unknown";
-    private String InterfacesFolder = "Content\\Reference\\Interfaces";
-    
-    private String SnippetsFolder = "Content\\Resources\\Snippets";
-    
     private static final String ctComment = "Comment";
     private static final String ctProperty = "Property";
     
+    private final String IndexFolder = "Content";
+    private final String TocFolder = "Projects\\Tocs";
+    
+    private final String EnumsFolder = "Content\\Reference\\Enums";
+    private final String ServicesFolder = "Content\\Reference\\Services";
+    private final String TypesFolder = "Content\\Reference\\Types";
+    private final String TestsFolder = "Content\\Reference\\Tests";
+    private final String UnknownFolder = "Content\\Reference\\Unknown";
+    private final String InterfacesFolder = "Content\\Reference\\Interfaces";
+    
+    private final String SnippetsFolder = "Content\\Resources\\Snippets";
+    
+       
     private static final String DefFileExt = ".htm";
 
     
@@ -115,7 +115,7 @@ public class Documenter {
         //We're finished...so tell the user
         System.out.printf("Generation Completed: %s\n", new Date().toString());
     }
-
+    
     //**************************************************************************
      // Given an input path, this routine looks for .CLS files, scans them
      // (adding the results to the alItems arraylist) and then generates the
@@ -137,6 +137,9 @@ public class Documenter {
         
         GenerateOutputDocs(TypesFolder);
         generateFiles();
+        
+        String message = String.format("Chunks: Processed %s Outputted %s", processedChunks, outputtedChunks);
+        DebugOut(message);
     }
 
     //**************************************************************************
@@ -155,9 +158,8 @@ public class Documenter {
     //**************************************************************************
     private List<FilenameVersionFf> scanFiles() {
         Integer totalFiles = 0;
-        String sFilename = "";
 
-        List<FilenameVersionFf> latestVersionFileList = new ArrayList<FilenameVersionFf>();
+        List<FilenameVersionFf> latestVersionFileList = new ArrayList<>();
         
         alItems.clear();
 
@@ -170,17 +172,7 @@ public class Documenter {
         //Get a list of files in the input folder
         File f = new File(_configModel.SourceFolder);
 
-        FilenameFilter textFilter = new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                String lowercaseName = name.toLowerCase();
-                //if (lowercaseName.startsWith("codaapi") && lowercaseName.endsWith(".cls")) 
-                if (lowercaseName.startsWith(_configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls")) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        };
+        FilenameFilter textFilter = new FilenameFilterImpl();
 
         File[] listOfFiles = f.listFiles(textFilter);
 
@@ -189,32 +181,25 @@ public class Documenter {
         {
             System.out.println("Invalid source path");
         } else {
-            for (int i = 0; i < listOfFiles.length; i++) //Iterate through the file list...
-                        {
+            for (File file : listOfFiles) {
                 //Is this item a file?
-                if (listOfFiles[i].isFile()) {
-                    sFilename = listOfFiles[i].getName();
-
-                    String[] filenameSplitStrings = sFilename.split("_");
-
+                if (file.isFile()) {
+                    String filename = file.getName();
+                    String[] filenameSplitStrings = filename.split("_");
                     int version = 1;
-
                     // This happens when there is version information in the file name
                     if (filenameSplitStrings.length > 2) {
                         version = Integer.parseInt(filenameSplitStrings[1]);
                     } else {
                         // Get the class name
-                        int pos = sFilename.indexOf('.');
-                        filenameSplitStrings[0] = sFilename.substring(0, pos);
+                        int pos = filename.indexOf('.');
+                        filenameSplitStrings[0] = filename.substring(0, pos);
                     }
-
                     FilenameVersionFf filenameVersionFf = new FilenameVersionFf();
                     filenameVersionFf.Name = filenameSplitStrings[0];
-                    filenameVersionFf.FullName = listOfFiles[i].getPath();
+                    filenameVersionFf.FullName = file.getPath();
                     filenameVersionFf.Version = version;
-
                     int result = GetIndexOf(latestVersionFileList, filenameVersionFf);
-
                     if (-1 == result) {
                         // Add
                         latestVersionFileList.add(filenameVersionFf);
@@ -228,7 +213,6 @@ public class Documenter {
                     }
                 }
                 dumpFiles(latestVersionFileList);
-
                 if (globalAbort) //Did we abort?
                 {
                     break;
@@ -275,12 +259,12 @@ public class Documenter {
     //**************************************************************************
     private void scanFile(String filename) {
         String fileData = "";
-        String chunk = "";
-        String check = "";
-        String chunkType = "";
-        String debugText = "";
-        String oldData = "";
-        Integer repeatCount = 0;
+//        String chunk = "";
+//        String check = "";
+        String sChunkType = "";
+//        String debugText = "";
+//        String oldData = "";
+//        Integer repeatCount = 0;
         boolean bAbort = false;
 
         System.out.printf("Scanning: %s%s", filename, NewLine);
@@ -320,23 +304,26 @@ public class Documenter {
         fileData = fileData.replace("\t", " \t ");
         fileData = fileData.replace("\n", " \n ");
 
+        String debugText = "";
+        int repeatCount = 0;
+        
         //Loop until we run out of data (or get told to abort)...
         while (!fileData.trim().equals("") && !bAbort && !globalAbort) {
             //To stop ourselves form getting stuck in loops, we'll keep a track
             //of the data to see if it changes across iterations. If it *doesn't*
             //then we can spot it and do something about it
-            oldData = fileData;
+            String oldData = fileData;
             //Build a debug 'chain' (which should help us to figure out where we got stuck) 
             debugText += " 0->";
 
             //Extract the next 'chunk' of data
-            RefObject<String> tempRef_sData = new RefObject<String>(fileData);
-            RefObject<String> tempRef_sChunkType = new RefObject<String>(chunkType);
+            RefObject<String> tempRef_sData = new RefObject<>(fileData);
+            RefObject<String> tempRef_sChunkType = new RefObject<>(sChunkType);
 
             //Get the next 'chunk'
-            chunk = getNextChunk(tempRef_sData, tempRef_sChunkType);
+            String chunk = getNextChunk(tempRef_sData, tempRef_sChunkType);
             fileData = tempRef_sData.argvalue;
-            chunkType = tempRef_sChunkType.argvalue;
+            String chunkType = tempRef_sChunkType.argvalue;
 
             debugText += "1->";
 
@@ -363,6 +350,7 @@ public class Documenter {
             if (!chunk.equals("")) {
                 //No - Process it
 
+                String check;
                 //If the chunk contains a CR...
                 if (chunk.contains("\n")) {
                     //...get everything *up to* the CR...
@@ -440,15 +428,12 @@ public class Documenter {
             (new java.io.File(filesProcessedFileName)).delete();
         }
 
-        BufferedWriter writer = null;
         try {
-            writer = new BufferedWriter(new FileWriter(filesProcessedFileName));
-
-            for (FilenameVersionFf file : latestVersionFileList) {
-                writer.write(file.FullName + "\n");
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filesProcessedFileName))) {
+                for (FilenameVersionFf file : latestVersionFileList) {
+                    writer.write(file.FullName + "\n");
+                }
             }
-
-            writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -480,12 +465,13 @@ public class Documenter {
                 file.createNewFile();
             }
 
-            // creates a FileWriter Object
-            FileWriter writer = new FileWriter(file, true);
             // Writes the content to the file
-            writer.write(ft.format(date) + "  " + message + NewLine);
-            writer.flush();
-            writer.close();
+            try ( // creates a FileWriter Object
+                    FileWriter writer = new FileWriter(file, true)) {
+                // Writes the content to the file
+                writer.write(ft.format(date) + "  " + message + NewLine);
+                writer.flush();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -506,17 +492,264 @@ public class Documenter {
     }
 
     private void ProcessChunk(String sChunk, String string, String sFilename) {
-        
+        processedChunks++;
     }
 
     private void OutputChunk(String sChunkType, String sChunk, String string, String sFilename) {
+        outputtedChunks++;
+    }
+
+    //**************************************************************************
+    // Routine: GetNextChunk
+    // Given a set of data, this routine works out the next 'chunk' 
+    // (i.e. 'section', structure etc.), decides what 'type' it is
+    // (e.g. structure, method) and returns it 
+    //**************************************************************************
+    private String getNextChunk(RefObject<String> data, RefObject<String> chunkType) {
+        String result = "";
+        boolean bHandled = false;
+
+        //Assume that we have no idea what this chunk is (as we don't at this point)
+        chunkType.argvalue = ctUnknown;
+
+        //Does the data start with a '//' (i.e. is this a comment)?
+        if (data.argvalue.startsWith("//"))
+        {
+            //Yes - Extract the comment, set the return type...and get out
+            if (data.argvalue.indexOf("\n") >= 0) {
+                result = ExtractText(data, data.argvalue.indexOf("\n"));
+            } else {
+                result = data.argvalue;
+                data.argvalue = "";
+            }
+
+            chunkType.argvalue = ctComment;
+            return result;
+        }
+
+        //Does the data start with '/*' (i.e. is this a comment)?
+        if (data.argvalue.startsWith("/*"))
+        {
+            //Yes - Extract the comment, set the return type...and get out
+            result = ExtractText(data, data.argvalue.indexOf("*/") + 1);
+            chunkType.argvalue = ctComment;
+            return result;
+        }
+
+        String start;
+        //Does this data have a space in it?
+        if (data.argvalue.indexOf(" ") >= 0)
+        {
+             	//Yes - Extract the first 'word'
+            start = ExtractText(data, data.argvalue.indexOf(" "));
+        } else {
+            //No - Use everything as the first 'word'
+            start = data.argvalue;
+            data.argvalue = "";
+        }
+
+        //Work out what the first 'word' (sStart) contains...and then respond accordingly
+        String check = start.toUpperCase().trim();
+        int iChunkEnd = -1;
         
+        //Check for 'Global', 'Private', 'Public' and '@IsTest' - these should be the only valid ways to start something in Apex
+        if ((check.equals("GLOBAL") || check.equals("WEBSERVICE") || check.equals("PUBLIC") || check.equals("PRIVATE") || check.equals("@ISTEST") || check.equals("@REMOTEACTION")) && !bHandled) {
+            result = start + " ";
+
+            //Try to figure out the structure of the data by looking for brackets, semi-colons etc.
+            int iBracket = data.argvalue.indexOf("(");
+            int iBrace = data.argvalue.indexOf("{");
+            int iEquals = data.argvalue.indexOf("=");
+            int iSemiColon = data.argvalue.indexOf(";");
+
+            //If we can't find brackets...set their position to be stupidly high (it helps the checks later on)
+            if (iBracket < 0) {
+                iBracket = Integer.MAX_VALUE;
+            }
+            if (iBrace < 0) {
+                iBrace = Integer.MAX_VALUE;
+            }
+
+            //Do we have a semi-colon?
+            if (iSemiColon != -1)
+            {
+                //Yes - Check to see if it falls *before* the other things that we scanned for
+                if (iEquals > iSemiColon) {
+                    iEquals = -1;
+                }
+                if (iBracket > iSemiColon) {
+                    iBracket = -1;
+                }
+                if (iBrace > iSemiColon) {
+                    iBrace = -1;
+                }
+            }
+
+            if (iEquals != -1) //Variable?
+            {
+                //Yes - Read to the next semi-colon
+                //Is the equals *after* a brace bracket?
+                if ((iBrace < iEquals) && (iBrace != -1))
+                {
+                    iChunkEnd = 2;
+                    //Yes - Class or routine
+
+                     //Regular bracket before brace bracket?
+                    if ((iBracket < iBrace) && (iBracket != -1))
+                    {
+                        chunkType.argvalue = ctMethod;
+                    } else {
+                        chunkType.argvalue = ctClass;
+                    }
+                } else {
+                    //No - Simple variable
+                    iChunkEnd = 0;
+                    chunkType.argvalue = ctVar;
+                }
+            } else {
+                 //Brace bracket before regular bracket?
+                if ((iBrace < iBracket) && (iBrace != -1))
+                {
+                    //Yes - Enumeration
+                    iChunkEnd = 1;
+                    chunkType.argvalue = ctEnum;
+                } else {
+                    //Regular bracket before brace bracket?
+                    if ((iBracket < iBrace) && (iBracket != -1)) 
+                    {
+                        iChunkEnd = 2;
+                        chunkType.argvalue = ctMethod;
+                    } else {
+                        //Brace and *no* regular bracket?
+                        if ((iBrace != -1) && (iBracket == -1))
+                        {
+                            iChunkEnd = 2;
+                            chunkType.argvalue = ctProperty;
+                        } else {
+                             //No brace, no bracket and no equals?
+                            if ((iBrace == -1) && (iBracket == -1))
+                            {
+                                iChunkEnd = 0;
+                                chunkType.argvalue = ctVar;
+                            }
+                        }
+                    }
+                }
+            }
+
+            //Have we found a nested class?
+            if ((iBrace > 0)
+                    && (data.argvalue.toLowerCase().indexOf("class") < iBrace)
+                    && (data.argvalue.toLowerCase().indexOf("class") >= 0))
+            {
+                //Yes - Read to the end of it
+                iChunkEnd = 2;
+                chunkType.argvalue = ctClass + "3";
+            }
+
+            if (check.equals("@REMOTEACTION"))
+                {
+                    chunkType.argvalue = "RemoteAction";
+                    result = "";
+                }
+            
+            //If this method is actually a test...
+            if ((chunkType.argvalue.equals(ctMethod)) && (check.equals("@ISTEST")))
+            {
+                //...mark it as such
+                chunkType.argvalue = ctTest;
+            }
+            
+            if ((chunkType.argvalue.equals("Methods")) && (check.equals("WEBSERVICE")))
+                {
+                    chunkType.argvalue = "Web Services";
+                }
+                
+            if (data.argvalue.toUpperCase().trim().startsWith("INTERFACE"))
+            {
+                chunkType.argvalue = "Interfaces";
+            }
+            
+            switch (iChunkEnd) {
+                case 0: //Scan for next semi-colon
+                    result += ExtractText(data, iSemiColon);
+                    bHandled = true;
+                    break;
+                case 1: //Scan for next close brace bracket
+                    result += ExtractText(data, data.argvalue.indexOf("}"));
+                    bHandled = true;
+                    break;
+                case 2: //Scan for nested close brace bracket
+                    result += ExtractText(data, iBrace);
+
+                    //Loop until we find the end of the routine
+                    int iIndent;
+                    do {
+                        check = ExtractText(data, data.argvalue.indexOf("}"));
+
+                        result = result + " " + check;
+
+                        iIndent = TextCount(result, "{");
+                        iIndent -= TextCount(result, "}");
+                    } while (iIndent > 0);
+                    break;
+            }
+
+            //Check to see if this thing is an enum...and set it as such (if it is)
+            if ((chunkType.argvalue.equals(ctClass))
+                    && (!result.contains(";") && (result.toLowerCase().contains(" enum ")))) {
+                chunkType.argvalue = ctEnum;
+            }
+        }
+        return result;
     }
 
-    private String getNextChunk(RefObject<String> tempRef_sData, RefObject<String> tempRef_sChunkType) {
-        return "";
+    //**************************************************************************
+    // Method: ExtractText
+    // Given a text string, this routine returns the section of text
+    // up to the supplied position. As well as this it also *removes*
+    // that section of text from the original text
+    //**************************************************************************
+    private String ExtractText(RefObject<String> sData, int iToPos) {
+        String sResult = "";
+
+        //Is the position past the end of the source text?
+        if (iToPos >= sData.argvalue.length())
+        {
+            sResult = sData.argvalue;
+            sData.argvalue = "";
+        } else {
+            //No - Return only the section of text we were asked for
+            if (iToPos >= 0) {
+                //Extract the text...
+                sResult = sData.argvalue.substring(0, iToPos + 1).trim();
+                
+                //...and remove it form the source text
+                sData.argvalue = sData.argvalue.substring(iToPos + 1).trim();
+            }
+        }
+
+        return sResult;
     }
 
+    //**************************************************************************
+    // Routine: TextCount
+    // Given a text string and a pattern to find this routine returns
+    // the number of instances of the pattern in the text
+    //**************************************************************************
+    private int TextCount(String sText, String sPattern) {
+        int iCount = 0;
+        int iIndex = 0;
+
+         //Loop until we can't find any more instances of the pattern...
+        while ((iIndex = sText.indexOf(sPattern, iIndex)) != -1){
+            iIndex += sPattern.length();
+            iCount += 1;
+        }
+        //All done, return how many instances we found
+        return iCount;
+    }
+    
     //**************************************************************************
     // Class:   RefObject
     // Outline: Class used to simulate the ability to pass arguments by 
@@ -528,6 +761,19 @@ public class Documenter {
 
         public RefObject(T refarg) {
             argvalue = refarg;
+        }
+    }
+
+    private class FilenameFilterImpl implements FilenameFilter {
+
+        public FilenameFilterImpl() {
+        }
+
+        @Override
+        public boolean accept(File dir, String name) {
+            String lowercaseName = name.toLowerCase();
+            //if (lowercaseName.startsWith("codaapi") && lowercaseName.endsWith(".cls"))
+            return lowercaseName.startsWith(_configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls");
         }
     }
 }
