@@ -402,7 +402,7 @@ public class Documenter {
 
         if (!sFolder.endsWith("\\")) //Does our output folder end with a '\'?
         {
-            sFolder = sFolder + "\\"; //Nope - Add one on
+            sFolder += "\\"; //Nope - Add one on
         }
         //Create the individual item type output folders
         (new File(sFolder + EnumsFolder)).mkdirs();
@@ -433,7 +433,7 @@ public class Documenter {
 
                 if ((!"".equals(configModel.Namespace.trim())) && !configModel.Namespace.endsWith("."))
                 {
-                    configModel.Namespace = configModel.Namespace + ".";
+                    configModel.Namespace += ".";
                 }
                                 
                 generateOutputDocs(configModel.OutputFolder);
