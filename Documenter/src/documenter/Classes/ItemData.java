@@ -14,6 +14,7 @@ public class ItemData {
     public boolean RemoteAction;
     public int iInstance = 1;
 
+    public Integer MethodType = -1;
     public String sChunkData = "";
     public String sChunkType = "";
     public String sExtends = "";

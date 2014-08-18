@@ -59,6 +59,7 @@ public class Documenter {
     private static final String ctEnum = "Enumerations";
     private static final String ctComment = "Comment";
     private static final String ctProperty = "Property";
+    private static final String ctRemoteAction = "RemoteAction";
     
     private final String IndexFolder = "Content";
     private final String TocFolder = "Projects\\Tocs";
@@ -130,16 +131,17 @@ public class Documenter {
         if(latestVersionFileList.isEmpty()){
             globalAbort = true;
             globalAbortText = "Could not find any files to process";
-            DebugOut( String.format("ABORTED: %s", globalAbortText));
+            debugOut( String.format("ABORTED: %s", globalAbortText));
             return;
         }
         processSelectedFiles(latestVersionFileList);
         
-        GenerateOutputDocs(TypesFolder);
+        generateOutputDocs(TypesFolder);
         generateFiles();
         
         String message = String.format("Chunks: Processed %s Outputted %s", processedChunks, outputtedChunks);
-        DebugOut(message);
+        debugOut(message);
+        System.out.printf(message + NewLine);
     }
 
     //**************************************************************************
@@ -195,11 +197,13 @@ public class Documenter {
                         int pos = filename.indexOf('.');
                         filenameSplitStrings[0] = filename.substring(0, pos);
                     }
+                    
                     FilenameVersionFf filenameVersionFf = new FilenameVersionFf();
                     filenameVersionFf.Name = filenameSplitStrings[0];
                     filenameVersionFf.FullName = file.getPath();
                     filenameVersionFf.Version = version;
-                    int result = GetIndexOf(latestVersionFileList, filenameVersionFf);
+                    
+                    int result = getIndexOf(latestVersionFileList, filenameVersionFf);
                     if (-1 == result) {
                         // Add
                         latestVersionFileList.add(filenameVersionFf);
@@ -259,12 +263,6 @@ public class Documenter {
     //**************************************************************************
     private void scanFile(String filename) {
         String fileData = "";
-//        String chunk = "";
-//        String check = "";
-        String sChunkType = "";
-//        String debugText = "";
-//        String oldData = "";
-//        Integer repeatCount = 0;
         boolean bAbort = false;
 
         System.out.printf("Scanning: %s%s", filename, NewLine);
@@ -318,6 +316,7 @@ public class Documenter {
 
             //Extract the next 'chunk' of data
             RefObject<String> tempRef_sData = new RefObject<>(fileData);
+            String sChunkType = "";
             RefObject<String> tempRef_sChunkType = new RefObject<>(sChunkType);
 
             //Get the next 'chunk'
@@ -363,14 +362,14 @@ public class Documenter {
                 //Is this a class?
                 //if (sCheck.toLowerCase().contains("with sharing class"))
                 if (check.toLowerCase().contains(" class ")) {
-                    ProcessChunk(chunk, "", filename);
+                    processChunk(chunk, "", filename);
                 } else {
                     //No - Just output/save it
-                    OutputChunk(chunkType, chunk, "", filename);
+                    outputChunk(chunkType, chunk, "", filename);
 
                     if (false == chunkType.equals(ctComment)) {
                         String message = String.format("%s %s we are not checking for not marked as with sharing", chunkType, filename);
-                        DebugOut(message);
+                        debugOut(message);
                     }
                 }
             }
@@ -394,25 +393,25 @@ public class Documenter {
 
         sFolder = sFolder.trim();
 
-        (new java.io.File(sFolder)).mkdir(); //Create the root output folder
+        (new File(sFolder)).mkdir(); //Create the root output folder
 
         if (!sFolder.endsWith("\\")) //Does our output folder end with a '\'?
         {
             sFolder = sFolder + "\\"; //Nope - Add one on
         }
         //Create the individual item type output folders
-        (new java.io.File(sFolder + EnumsFolder)).mkdirs();
-        (new java.io.File(sFolder + InterfacesFolder)).mkdirs();
-        (new java.io.File(sFolder + ServicesFolder)).mkdirs();
-        (new java.io.File(sFolder + TestsFolder)).mkdirs();
-        (new java.io.File(sFolder + TypesFolder)).mkdirs();
-        (new java.io.File(sFolder + UnknownFolder)).mkdirs();
-        (new java.io.File(sFolder + TocFolder)).mkdirs();
-        (new java.io.File(sFolder + SnippetsFolder)).mkdirs();
+        (new File(sFolder + EnumsFolder)).mkdirs();
+        (new File(sFolder + InterfacesFolder)).mkdirs();
+        (new File(sFolder + ServicesFolder)).mkdirs();
+        (new File(sFolder + TestsFolder)).mkdirs();
+        (new File(sFolder + TypesFolder)).mkdirs();
+        (new File(sFolder + UnknownFolder)).mkdirs();
+        (new File(sFolder + TocFolder)).mkdirs();
+        (new File(sFolder + SnippetsFolder)).mkdirs();
         System.out.println("Done");
     }
     
-    private void GenerateOutputDocs(String OutputFolder) {
+    private void generateOutputDocs(String OutputFolder) {
 
     }
 
@@ -424,8 +423,8 @@ public class Documenter {
         String filesProcessedFileName = _configModel.OutputFolder + "\\FilesProcessed.txt";
 
         //Does the output file already exist?
-        if ((new java.io.File(filesProcessedFileName)).isFile()) {
-            (new java.io.File(filesProcessedFileName)).delete();
+        if ((new File(filesProcessedFileName)).isFile()) {
+            (new File(filesProcessedFileName)).delete();
         }
 
         try {
@@ -451,7 +450,7 @@ public class Documenter {
         snippetText.put("prop-OwnerId", "JOHN_OwnerId");
     }
 
-    private void DebugOut(String message) {
+    private void debugOut(String message) {
         String debugFileName = _configModel.OutputFolder + "\\Debug.txt";
 
         try {
@@ -477,7 +476,7 @@ public class Documenter {
         }
     }
 
-        private int GetIndexOf(List<FilenameVersionFf> latestVersionFileList, FilenameVersionFf filenameVersionFf) {
+    private int getIndexOf(List<FilenameVersionFf> latestVersionFileList, FilenameVersionFf filenameVersionFf) {
         if (latestVersionFileList == null) {
             return -1;
         }
@@ -491,16 +490,8 @@ public class Documenter {
         return index;
     }
 
-    private void ProcessChunk(String sChunk, String string, String sFilename) {
-        processedChunks++;
-    }
-
-    private void OutputChunk(String sChunkType, String sChunk, String string, String sFilename) {
-        outputtedChunks++;
-    }
-
     //**************************************************************************
-    // Routine: GetNextChunk
+    // Method: getNextChunk
     // Given a set of data, this routine works out the next 'chunk' 
     // (i.e. 'section', structure etc.), decides what 'type' it is
     // (e.g. structure, method) and returns it 
@@ -517,7 +508,7 @@ public class Documenter {
         {
             //Yes - Extract the comment, set the return type...and get out
             if (data.argvalue.indexOf("\n") >= 0) {
-                result = ExtractText(data, data.argvalue.indexOf("\n"));
+                result = extractText(data, data.argvalue.indexOf("\n"));
             } else {
                 result = data.argvalue;
                 data.argvalue = "";
@@ -531,7 +522,7 @@ public class Documenter {
         if (data.argvalue.startsWith("/*"))
         {
             //Yes - Extract the comment, set the return type...and get out
-            result = ExtractText(data, data.argvalue.indexOf("*/") + 1);
+            result = extractText(data, data.argvalue.indexOf("*/") + 1);
             chunkType.argvalue = ctComment;
             return result;
         }
@@ -541,7 +532,7 @@ public class Documenter {
         if (data.argvalue.indexOf(" ") >= 0)
         {
              	//Yes - Extract the first 'word'
-            start = ExtractText(data, data.argvalue.indexOf(" "));
+            start = extractText(data, data.argvalue.indexOf(" "));
         } else {
             //No - Use everything as the first 'word'
             start = data.argvalue;
@@ -649,7 +640,7 @@ public class Documenter {
 
             if (check.equals("@REMOTEACTION"))
                 {
-                    chunkType.argvalue = "RemoteAction";
+                    chunkType.argvalue = ctRemoteAction;
                     result = "";
                 }
             
@@ -660,37 +651,37 @@ public class Documenter {
                 chunkType.argvalue = ctTest;
             }
             
-            if ((chunkType.argvalue.equals("Methods")) && (check.equals("WEBSERVICE")))
+            if ((chunkType.argvalue.equals(ctMethod)) && (check.equals("WEBSERVICE")))
                 {
-                    chunkType.argvalue = "Web Services";
+                    chunkType.argvalue = ctWebServices;
                 }
                 
             if (data.argvalue.toUpperCase().trim().startsWith("INTERFACE"))
             {
-                chunkType.argvalue = "Interfaces";
+                chunkType.argvalue = ctInterfaces;
             }
             
             switch (iChunkEnd) {
                 case 0: //Scan for next semi-colon
-                    result += ExtractText(data, iSemiColon);
+                    result += extractText(data, iSemiColon);
                     bHandled = true;
                     break;
                 case 1: //Scan for next close brace bracket
-                    result += ExtractText(data, data.argvalue.indexOf("}"));
+                    result += extractText(data, data.argvalue.indexOf("}"));
                     bHandled = true;
                     break;
                 case 2: //Scan for nested close brace bracket
-                    result += ExtractText(data, iBrace);
+                    result += extractText(data, iBrace);
 
                     //Loop until we find the end of the routine
                     int iIndent;
                     do {
-                        check = ExtractText(data, data.argvalue.indexOf("}"));
+                        check = extractText(data, data.argvalue.indexOf("}"));
 
                         result = result + " " + check;
 
-                        iIndent = TextCount(result, "{");
-                        iIndent -= TextCount(result, "}");
+                        iIndent = textCount(result, "{");
+                        iIndent -= textCount(result, "}");
                     } while (iIndent > 0);
                     break;
             }
@@ -704,13 +695,490 @@ public class Documenter {
         return result;
     }
 
+    //******************* FROM DOCUMENTERWIZ ***********************************
+    // Method: processChunk
+    // Given a set of data, this routine works out the next 'chunk' 
+    // (i.e. 'section', structure etc.), decides what 'type' it is
+    // (e.g. structure, method) and returns it 
+    //**************************************************************************
+    private void processChunk(String data, String parentClass, String filename) {
+        processedChunks++;
+        String sChunkType = "";
+        String nextChunk = "";
+        String chunkType = "";
+        String sCheck = "";
+        String sClass = "";
+
+        while (data.trim() != "") {
+            //Extract the next 'chunk' of data
+            RefObject<String> tempRef_sData = new RefObject<String>(data);
+            RefObject<String> tempRef_sChunkType = new RefObject<String>(sChunkType);
+
+            //Get the next 'chunk'
+            nextChunk = getNextChunk(tempRef_sData, tempRef_sChunkType);
+            data = tempRef_sData.argvalue;
+            sChunkType = tempRef_sChunkType.argvalue;
+
+            //Is the chunk empty?
+            if (!nextChunk.equals("")) {
+                //If the chunk contains a new line
+                if (nextChunk.contains("\n")) {
+                    //...get everything *up to* the CR...
+                    sCheck = nextChunk.substring(0, nextChunk.indexOf("\n"));
+                } else {
+                    //...otherwise use the entire chunk
+                    sCheck = nextChunk;
+                }
+                //Work out if this is a class (or not)
+                if ((((sCheck.toLowerCase().contains("with sharing class ") || sCheck.toLowerCase().contains("global class ")) || (sCheck.toLowerCase().contains("public class ")
+                        || sCheck.toLowerCase().contains("private class "))) || (((sCheck.toLowerCase().contains("global virtual class ") || sCheck.toLowerCase().contains("public virtual class "))
+                        || (sCheck.toLowerCase().contains("private virtual class ") || sCheck.toLowerCase().contains("global abstract class "))) || (sCheck.toLowerCase().contains("public abstract class ")
+                        || sCheck.toLowerCase().contains("private abstract class ")))) && (chunkType != "Comment")) {
+                    RefObject<String> tempRef_sChunk = new RefObject<String>(nextChunk);
+                    sClass = extractText(tempRef_sChunk, nextChunk.indexOf("{") + 1).trim();
+                    nextChunk = tempRef_sChunk.argvalue;
+
+                    if (nextChunk.endsWith("}")) {
+                        nextChunk = nextChunk.substring(0, nextChunk.length() - 1);
+                    }
+                    //Output/save the class itself
+                    outputChunk(ctClass, sClass, parentClass, filename);
+
+                    //Strip out the class name so that we can prepend it onto any subclasses
+                    String str4 = sClass.substring(sClass.toUpperCase().indexOf("CLASS ") + 6).trim();
+                    if (str4.contains(" ")) {
+                        str4 = str4.substring(0, str4.indexOf(" ")).trim();
+                    }
+                    str4 = str4.trim();
+                    if (str4.endsWith("{")) {
+                        str4 = str4.substring(0, str4.length() - 1).trim();
+                    }
+                    if (parentClass.trim() == "") {
+                        processChunk(nextChunk, str4, filename);
+                    } else {
+                        processChunk(nextChunk, parentClass + "." + str4, filename);
+                    }
+                } else {
+                    outputChunk(chunkType, nextChunk, parentClass, filename);
+                }
+            }
+        }
+    }
+
+    //**************************************************************************
+    // Method: outputChunk
+    // 
+    // 
+    // 
+    //**************************************************************************
+    private void outputChunk(String sChunkType, String sChunk, String sParentClass, String sFilename) {
+        outputtedChunks++;
+        
+        if (sChunk.trim() != "")
+            {
+                String str;
+                
+                if (((sChunkType.equals("Comment")) || (sChunkType.equals("Unknown"))) || (sChunkType.equals("Tests")))
+                {
+                    str = "N/A";
+                }
+                else
+                {
+                    if (sChunk.toUpperCase().startsWith("STATIC "))
+                    {
+                        sChunk = sChunk.substring(7).trim();
+                    }
+                                        
+                    if (sChunk.trim().contains(" ")) {
+                        str = sChunk.substring(0, sChunk.indexOf(" ")).toUpperCase();
+                    } else {
+                        str = sChunk.toUpperCase().trim();
+                    }
+                }
+
+                if ((((str.equals("PUBLIC")) && _configModel.ShowPublic) || ((str.equals("PRIVATE")) && _configModel.ShowPrivate)) 
+                    || ((((str.equals("GLOBAL")) && _configModel.ShowGlobal) || ((str.equals("WEBSERVICE")) && _configModel.ShowWebService)) || (str.equals("N/A"))))
+                {
+                    ItemData newItem = new ItemData();
+                    newItem.sName = "";
+                    newItem.sParentClass = sParentClass;
+                    newItem.sChunkType = sChunkType;
+                    newItem.sChunkData = sChunk;
+                    newItem.sVisibility = str;
+                    newItem.sSourceFile = sFilename;
+                    newItem.iInstance = 1;
+
+
+                    switch (sChunkType)
+                    {
+                        case ctClass:
+                            newItem = decodeClass(newItem);
+                            break;
+
+                        case ctEnum:
+                            newItem = decodeEnum(newItem);
+                            break;
+
+                        case ctVar:
+                            newItem = decodeVar(newItem);
+                            break;
+
+                        case ctMethod:
+                            newItem = decodeMethod(newItem);
+                            break;
+
+                        case ctWebServices:
+                            newItem = decodeMethod(newItem);
+                            break;
+
+                        case ctUnknown:
+                            newItem = decodeUnknown(newItem);
+                            break;
+
+                        case ctComment:
+                            newItem = decodeComment(newItem);
+                            break;
+
+                        case ctProperty:
+                            newItem = decodeProperty(newItem);
+                            break;
+
+                        case ctTest:
+                            newItem = decodeTest(newItem);
+                            break;
+
+                        case ctInterfaces:
+                            newItem = decodeInterface(newItem);
+                            break;
+
+                        case ctRemoteAction:
+                            newItem.sChunkType = "Methods";
+                            newItem.RemoteAction = true;
+                            newItem = decodeMethod(newItem);
+                            break;
+                    }
+                    
+                    //Did we identify a name for this chunk?
+                    if (newItem.sName.trim() != "")
+                    {
+                        for (ItemData data2 : alItems)
+                        {
+                            if (((data2.sChunkType == newItem.sChunkType) && (data2.sName.toUpperCase().trim() == newItem.sName.toUpperCase().trim())) && (data2.iInstance >= newItem.iInstance))
+                            {
+                                newItem.iInstance = data2.iInstance + 1;
+                            }
+                        }
+                        newItem.sOutputFile = newItem.sName + newItem.iInstance + ".htm";
+                        alItems.add(newItem);
+                    }
+                }
+            }
+    }
+    
+    //**************************************************************************
+    // Method: DecodeClass
+    // Given a set of object data containing a class, this 
+    // routine extracts the class name and whether it extends another class
+    // 
+    //**************************************************************************
+    private ItemData decodeClass(ItemData newItem) {
+        newItem.sName = extractItemName(newItem, "CLASS");
+
+        //Work out if this class extends another class...and store it if it does
+        if (newItem.sChunkData.toLowerCase().contains(" extends ")) //Does the chunk data contain 'extends'?
+        { 																//Yes - Work out *what* it extends
+            newItem.sExtends = newItem.sChunkData.substring(newItem.sChunkData.toLowerCase().indexOf(" extends ") + 8).trim();
+
+            if (newItem.sExtends.endsWith("{")) {
+                newItem.sExtends = newItem.sExtends.substring(0, newItem.sExtends.length() - 1).trim();
+            }
+        }
+
+        return newItem;
+    }
+    
+    //**************************************************************************
+    // Routine: DecodeEnum
+    // Outline: Given a set of object data containing an 
+    //			enumeration, this routine extracts the enumeration name and its
+    //			values
+    //**************************************************************************
+    private ItemData decodeEnum(ItemData newItem) {
+        newItem.sName = extractItemName(newItem, "ENUM");
+
+        String str = preProcessComments(newItem.sChunkData, true);
+
+        //Extract the data between the two brace-brackets - this will contain the available values for the enum
+        str = str.substring(str.indexOf("{") + 1).trim();
+        str = str.substring(0, str.indexOf("}")).trim().replace("\n", " ").replace("\t", " ");
+        String[] strArray = str.split("\\,");
+
+        ArrayList<String> alData = new ArrayList<String>();
+
+        //Put the list of values into an ArrayList...
+        for (int iCount = 0; iCount < strArray.length; iCount++) {
+            alData.add(strArray[iCount].trim());
+        }
+
+        java.util.Collections.sort(alData);
+
+        // Iterate through the ArrayList and use it to construct a string of all possible values
+        for (int index = 0; index < alData.size(); index++) {
+            if (index == 0) {
+                str = alData.get(index).toString();
+            } else {
+                str = str + ", " + alData.get(index).toString();
+            }
+        }
+        newItem.sValues = str;
+        return newItem;
+    }
+    
+    //**************************************************************************
+    // Method: DecodeVar
+    // Given a set of object data containing a variable
+    // definition, this routine extract the variable's name and type
+    //**************************************************************************
+    private ItemData decodeVar(ItemData newItem) {
+        String sData = newItem.sChunkData;
+
+        if (sData.contains("=")) //Does the data a have a '=' in it?
+        {
+            //Yes - The variable has a default value...so get everything up to the '='
+            sData = sData.substring(0, sData.indexOf("=") + 1).trim();
+            sData = sData.replace("=", "").trim();
+        } else
+        {
+            //No - The variable is *just* the variable...so get everything up to the semi-colon
+            sData = sData.replace(";", "").trim();
+        }
+
+         //Does the remaining data have a space in it?
+        if (sData.contains(" "))
+        {
+            //Yes - It's well formed then (type *and* name)...so use it
+            newItem.sName = sData.substring(sData.lastIndexOf(" ")).trim();
+            sData = sData.substring(0, sData.lastIndexOf(" ")).trim();
+
+            newItem.sType = extractReturnType(sData);
+        }
+
+        return newItem;
+    }
+    
+    //**************************************************************************
+    // Routine: DecodeMethod
+    // Outline: Given a set of object data containing a method
+    //			definition, this routine extracts the method name, return type,
+    //			parameter list and whether it's a constructor or not
+    //**************************************************************************
+    private ItemData decodeMethod(ItemData newItem)
+        {
+            String sChunkData = newItem.sChunkData;
+            sChunkData = sChunkData.substring(0, sChunkData.indexOf("(")).trim();
+            newItem.sName = sChunkData.substring(sChunkData.lastIndexOf(" ")).trim();
+            sChunkData = sChunkData.substring(0, sChunkData.lastIndexOf(" ")).trim();
+            newItem.sType = extractReturnType(sChunkData);
+            if (newItem.sType == "[CONSTRUCTOR]")
+            {
+                newItem.sType = "";
+                newItem.MethodType = 1;
+            }
+            if (newItem.sVisibility.toUpperCase().trim() == "WEBSERVICE")
+            {
+                newItem.MethodType = 2;
+            }
+            sChunkData = newItem.sChunkData;
+            sChunkData = sChunkData.substring(sChunkData.indexOf("(") + 1).trim();
+            sChunkData = sChunkData.substring(0, sChunkData.indexOf(")")).trim();
+            newItem.sParams = sChunkData;
+            return newItem;
+        }
+    
+    //**************************************************************************
+    // Routine: DecodeUnknown
+    // Outline: Given a set of object data containing an 'unknown', this routine
+    //			does, err, nothing
+    //**************************************************************************
+    private ItemData decodeUnknown(ItemData newItem) {
+        return newItem;
+    }
+    
+    //**************************************************************************
+    // Method: DecodeComment
+    // Given a set of object data containing a set of
+    // comment data, this routine re-formats the comment into a single 
+    // line (if it spanned multiple lines) and extracts any 'DOC' data
+    //**************************************************************************    
+    private ItemData decodeComment(ItemData newItem) {
+        int length = 0;
+        
+        //Replace any tabs with single spaces
+        String str = newItem.sChunkData.replace("\t", " ").trim();
+
+        //If this is a single line comment...remove the leading '//'                
+        if (str.startsWith("//"))
+        {
+            str = str.substring(2);
+        } else {
+            //...otherwise remove the multi-line characters
+            str = str.replace("/*", "");
+            str = str.replace("* ", "");
+            str = str.replace("*/", "");
+        }
+
+        //Remove multiple spaces
+        while (length != str.length()) {
+            length = str.length();
+            str = str.replace("  ", " ");
+        }
+        
+        //Work out if the comment contains any documentation flags...and extract them if it does
+        if (str.toUpperCase().contains("@DOC ")) {
+            str = str.substring(str.toUpperCase().indexOf("@DOC ") + ("@".length() + 4)).trim();
+            newItem.sName = str.substring(0, str.indexOf(" ")).trim();
+            newItem.sParams = str.substring(str.indexOf(" ")).trim();
+            return newItem;
+        } else {
+            newItem.sName = ""; //This *isn't* a set of 'doc' data...so forget about it
+        }
+        return newItem;
+    }
+
+    //**************************************************************************
+    // Routine: DecodeProperty
+    // Outline: Given a set of object data containing a property 
+    // definition, this routine extracts the property name and type
+    //**************************************************************************
+    private ItemData decodeProperty(ItemData newItem) {
+        String sData = newItem.sChunkData;
+
+        //Extract the name
+        sData = sData.substring(0, sData.indexOf("{")).trim();
+        newItem.sName = sData.substring(sData.lastIndexOf(" ")).trim();
+
+        //Extract the return type
+        sData = sData.substring(0, sData.lastIndexOf(" ")).trim();
+        newItem.sType = extractReturnType(sData);
+
+        return newItem;
+    }
+
+    //**************************************************************************
+    // Method: DecodeTest
+    // Given a set of object data containing a test method, 
+    // this routine extracts everything that it can about the test (by 
+    // treating it as a regular method) 
+    //**************************************************************************
+    private ItemData decodeTest(ItemData newItem) {
+        newItem = decodeMethod(newItem);
+
+        return newItem;
+    }
+
+    //**************************************************************************
+    // Method: DecodeInterface
+    // Given a set of object data containing an interface 
+    // definition, this routine extracts the interface name and type
+    //**************************************************************************
+    private ItemData decodeInterface(ItemData newItem) {
+        String sChunkData = newItem.sChunkData;
+        sChunkData = sChunkData.substring(sChunkData.toUpperCase().indexOf("INTERFACE ")).trim();
+        sChunkData = sChunkData.substring(sChunkData.indexOf(" ")).trim();
+        if (sChunkData.contains("{")) {
+            sChunkData = sChunkData.substring(0, sChunkData.indexOf("{")).trim();
+        }
+        newItem.sName = sChunkData;
+        return newItem;
+    }
+    
+    //**************************************************************************
+    // Method preProcessComments
+    // 
+    // 
+    // 
+    //**************************************************************************
+    private String preProcessComments(String data, boolean removeComments) {
+        int startIndex;
+        int length;
+        String str;
+        String str2;
+        String str3;
+
+        for (startIndex = 0; data.indexOf("//", startIndex) != -1; startIndex = str.length() + str3.length()) {
+            length = data.indexOf("//", startIndex);
+            str = data.substring(0, length);
+            if (data.indexOf("\n", data.indexOf("//")) != -1) {
+                str3 = data.substring(length);
+                str3 = str3.substring(0, str3.indexOf("\n"));
+                str2 = data.substring(data.indexOf("\n", length));
+            } else {
+                str2 = "";
+                str3 = data.substring(length);
+            }
+            str3 = str3.replace("{", "(").replace("}", ")").replace(";", " ").replace("//*", "// *");
+            if (removeComments) {
+                str3 = "";
+            }
+            data = str + str3 + str2;
+        }
+        for (startIndex = 0; data.indexOf("/*", startIndex) != -1; startIndex = str.length() + str3.length()) {
+            length = data.indexOf("/*", startIndex);
+            str = data.substring(0, length);
+            if (data.indexOf("*/", length) != -1) {
+                str3 = data.substring(length);
+                str3 = str3.substring(0, str3.indexOf("*/"));
+                str2 = data.substring(data.indexOf("*/", length));
+            } else {
+                str2 = "";
+                str3 = data.substring(length);
+            }
+            str3 = str3.replace("{", "(").replace("}", ")").replace(";", " ");
+            if (removeComments) {
+                str3 = "";
+            }
+            data = str + str3 + str2;
+        }
+        return data;
+    }
+    
+    //**************************************************************************
+    // Method: ExtractItemName
+    // Given a set of data and a piece of text to search for, this 
+    // routine attempts to work out the name of the data (e.g. method
+    // name, parameter name)
+    //**************************************************************************
+    private String extractItemName(ItemData newItem, String sFind) {
+        String sData = newItem.sChunkData;
+
+        //Does the data contain the string that we're looking for?
+        if (!sData.toUpperCase().contains(sFind.toUpperCase()))
+        {
+            return "";
+        }
+        //Extract the data *after* the text that we're looking for
+        sData = sData.substring(sData.toUpperCase().indexOf(sFind.toUpperCase().trim() + " ") + (sFind.trim().length() + 1)).trim();
+
+        if (sData.contains(" "))
+        {
+            //Yes - Get everything up to the first space
+            sData = sData.substring(0, sData.indexOf(" ")).trim();
+        } else {
+            //No - Check for a '{'...and use everything up to the '{'
+            if (sData.contains("{")) {
+                sData = sData.substring(0, sData.indexOf("{") - 1);
+            }
+        }
+        return sData;
+    }
+    
     //**************************************************************************
     // Method: ExtractText
     // Given a text string, this routine returns the section of text
     // up to the supplied position. As well as this it also *removes*
     // that section of text from the original text
     //**************************************************************************
-    private String ExtractText(RefObject<String> sData, int iToPos) {
+    private String extractText(RefObject<String> sData, int iToPos) {
         String sResult = "";
 
         //Is the position past the end of the source text?
@@ -733,11 +1201,40 @@ public class Documenter {
     }
 
     //**************************************************************************
+    // Method: extractReturnType
+    // Given a text string (containing something like a method or list
+    // definition) this routine works out the return type  
+    //**************************************************************************
+    private String extractReturnType(String data)
+        {
+            if (data.endsWith(">"))
+            {
+                String str = data.substring(data.indexOf("<")).trim();
+                data = data.substring(0, data.indexOf("<")).trim();
+
+                if (data.contains(" "))
+                {
+                    str = data.substring(data.lastIndexOf(" ")).trim() + str;
+                }
+                else
+                {
+                    str = data.trim() + str;
+                }
+                return str.replace(" ", "").replace(",", ", ");
+            }
+            if (data.contains(" "))
+            {
+                return data.substring(data.lastIndexOf(" ")).trim();
+            }
+            return "[CONSTRUCTOR]";
+        }
+    
+    //**************************************************************************
     // Routine: TextCount
     // Given a text string and a pattern to find this routine returns
     // the number of instances of the pattern in the text
     //**************************************************************************
-    private int TextCount(String sText, String sPattern) {
+    private int textCount(String sText, String sPattern) {
         int iCount = 0;
         int iIndex = 0;
 
@@ -749,7 +1246,7 @@ public class Documenter {
         //All done, return how many instances we found
         return iCount;
     }
-    
+
     //**************************************************************************
     // Class:   RefObject
     // Outline: Class used to simulate the ability to pass arguments by 
