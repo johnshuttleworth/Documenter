@@ -93,7 +93,7 @@ public class Documenter {
 //        {
 //            sConfigFile = args[0];		//Yes - Store its name
 //        }
-        String configFilename = "D:\\Dev_GitHub\\Documenter\\Documenter\\src\\ConfigFilesEtc\\V12.dcf";
+        String configFilename = "C:\\Dev_GitHub\\Documenter\\src\\ConfigFilesEtc\\V12.dcf";
 
         //Output copyright info, version etc.
         System.out.printf("%s %s\n%s\n\n", AppName, AppVersion, AppCopyright);
@@ -190,7 +190,9 @@ public class Documenter {
         //Do we have any files?
         if (listOfFiles == null)
         {
-            System.out.println("Invalid source path");
+            String message = String.format("****** Invalid source path: %s *******", configModel.SourceFolder);
+            debugOut(message);
+            System.out.println(message);
         } else {
             for (File file : listOfFiles) {
                 //Is this item a file?
@@ -1645,6 +1647,19 @@ public class Documenter {
     }
 
     //**************************************************************************
+    // Method: extractSubString
+    // By using this method it aids porting between OS's
+    //**************************************************************************
+    private static String extractSubString(String data, String toFind, int offset)
+    {
+        return data.substring(data.indexOf(toFind) + offset).trim();
+    }
+    
+    private static String extractSubString(int startIndex, String data, String toFind, int offSet)
+    {
+        return data.substring(startIndex, data.indexOf(toFind) + offSet).trim();
+    }
+    //**************************************************************************
     // Method: DateToShortTimeString
     // Given a date, this routine formats it as HH:mm:ss format
     //**************************************************************************
@@ -1847,16 +1862,121 @@ public class Documenter {
         return "";
     }
 
-    private CharSequence createUsageList(String sName, String sParentClass) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    //**************************************************************************
+    // Method: createUsageList
+    // When called, this routine takes the supplied name and builds a
+    // 'Used By...' HTML structure
+    //**************************************************************************
+    private CharSequence createUsageList(String className, String parentClass) {
+        String sHtmlPreMethodList = "";
+
+        if (configModel.AlItemUsage.size() <= 0) {
+            return sHtmlPreMethodList;
+        }
+
+        //Build a list containing all of the things that refer to the item we're looking for
+        List<String> usageList = new ArrayList<>();
+
+        for (ItemUsage usage : alItemUsage) {
+            if ((((usage.sItemName.equals((configModel.Namespace + parentClass + "." + className)))
+                    && (!"".equals(usage.sUsedByName.trim()))) 
+                    && ((!"".equals(usage.sItemName.trim()))
+                    && (!"".equals(usage.sUsedByType.trim())))) 
+                    && (usageList.indexOf(usage.sUsedByName + "|" + usage.sFilename + "|" + usage.sUsedByType) == -1)) {
+                
+//We have a set of valid data so...add it to our list of items
+                usageList.add(usage.sUsedByName + "|" + usage.sFilename + "|" + usage.sUsedByType);
+            }
+        }
+
+        if (usageList.size() <= 0) {
+            return sHtmlPreMethodList;
+        }
+
+        java.util.Collections.sort(usageList);
+
+        sHtmlPreMethodList = configModel.HtmlPreMethodList;
+        for (String preItem : usageList) {
+            String newValue = preItem;
+            String itemName = newValue.substring(0, newValue.indexOf("|")).trim();
+            newValue = newValue.substring(newValue.indexOf("|") + 1).trim();
+            String itemType = newValue.substring(newValue.indexOf("|") + 1).trim();
+            String link = newValue.substring(0, newValue.indexOf("|")).trim();
+            sHtmlPreMethodList = sHtmlPreMethodList + configModel.HtmlLoopMethodList.replace("[%ITEMLINK%]", link).replace("[%ITEMNAME%]", itemName).replace("[%ITEMTYPE%]", itemType);
+        }
+        return (sHtmlPreMethodList + configModel.HtmlPostMethodList);
     }
 
     private CharSequence createPropertyList(String sOutputMethodName, String sName, String sParentClass, String sExtends, String sChunkType, int iInstance) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
-    private CharSequence createInterfaceList(String sName, int iInstance, String sChunkType, String sChunkData, String sParentClass) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    //**************************************************************************
+    // Method: createInterfaceList
+    // 
+    // 
+    //**************************************************************************
+    private CharSequence createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
+            if (chunkType != "Interfaces") return "";
+            
+            if (interfaceData.contains("{"))
+            {
+                interfaceData = extractSubString(interfaceData, "{", 1, 1);
+            }
+            if (interfaceData.contains("}"))
+            {
+                interfaceData = extractSubString(0, interfaceData, "}", 0);
+            }
+
+            String sHtmlPreInterfaces = "";
+
+            String[] strArray = interfaceData.split(";");
+            if (strArray.length <= 0)
+            {
+                return sHtmlPreInterfaces;
+            }
+            
+            sHtmlPreInterfaces = configModel.HtmlPreInterfaces;
+            for (String preItem : strArray)
+            {
+                if ("".equals(preItem))
+                {
+                    continue;
+                }
+
+                ItemData newItem = new ItemData();
+                newItem.sChunkData = preItem.trim();
+
+                if (newItem.sChunkData.contains("("))
+                {
+                    newItem = decodeMethod(newItem);
+                    String name = newItem.sName;
+                    String paramsData = newItem.sParams;
+                    paramsData = createParamsData("", className, instance, chunkType, paramsData, parentClass, "", "", false);
+                    
+                    String str4;
+                    if ("".equals(newItem.sType.trim())) {
+                        str4 = "void";
+                    } else {
+                        str4 = buildTypeLink(newItem.sType, className, false, false);
+                    }
+                    
+                    String newValue = "";
+                    for (ItemData item : alItems)
+                    {
+                        if (((item.sName.toUpperCase().trim() != name.toUpperCase().trim()) ||
+                             (item.sParentClass.toUpperCase().trim() != parentClass.toUpperCase().trim())) ||
+                            (item.sChunkType != "Methods")) continue;
+                        newValue = GetChunkTypePath(item.sChunkType) + name + item.iInstance + ".htm";
+                        break;
+                    }
+                    if (!"".equals(name.trim()))
+                    {
+                        sHtmlPreInterfaces = sHtmlPreInterfaces + configModel.HtmlLoopInterfaces.replace("[%ITEMLINK%]", newValue).replace("[%NAME%]", name).replace("[%TYPE%]", str4).replace("[%PARAMETERS%]", paramsData);
+                    }
+                }
+            }
+            return (sHtmlPreInterfaces + configModel.HtmlPostInterfaces);
     }
     
     private void createSnippetFiles(String path, List<String> SnippetsList, Boolean bSnippetDescr, Boolean bSnippetExample, Boolean bSnippetInput, Boolean bSnippetOutput, String SnippetMarker) {
