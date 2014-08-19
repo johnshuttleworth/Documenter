@@ -1823,7 +1823,7 @@ public class Documenter {
                 sType = sType.substring(0, sType.lastIndexOf(str6)).trim();
                 sType = buildTypeLink(sType, parentClass, true, false);
                 String usedByLink = buildUsedByLink(usedByName, usedByChunkType, usedByInstance);
-                StoreTypeLink(sType, usedByLink, usedByName, usedByChunkType);
+                storeTypeLink(sType, usedByLink, usedByName, usedByChunkType);
                 if ((sType + " " + newValue).trim() != "") {
                     alParams.add(sType + " " + newValue);
                 }
@@ -1853,7 +1853,7 @@ public class Documenter {
         {
             sLink = sLink.substring(sLink.lastIndexOf(".") + 1).trim();	//...get *only* the thing  
         }
-        sLink = GetChunkTypePath(sChunkType) + sLink + (new Integer(iInstance)).toString() + DefFileExt;
+        sLink = getChunkTypePath(sChunkType) + sLink + (new Integer(iInstance)).toString() + DefFileExt;
 
         return sLink;
     }
@@ -1922,7 +1922,7 @@ public class Documenter {
             {
                 String sItemName = buildTypeLink(extendsClass, parentClass, false, false);
                 sResult = "This class/type extends " + sItemName + ".<BR/>";
-                StoreTypeLink(sItemName, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
+                storeTypeLink(sItemName, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
             }
 
             //Build the list of properties for this class
@@ -1966,7 +1966,7 @@ public class Documenter {
                 sPropertyType = buildTypeLink(sPropertyType, parentClass, false, false);
                 
                 //We're referencing a type...so make sure that we remember the reference (for the 'Used By...' list)
-                StoreTypeLink(sPropertyType, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
+                storeTypeLink(sPropertyType, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
                 
                 //Add the formatted name, type etc. to the result text
                 sResult = sResult + configModel.HtmlLoopPropList.replace("[%PROPERTYNAME%]", sPropertyName).replace("[%PROPERTYTYPE%]", sPropertyType).replace("[%SNIPPETLINK%]", snippetLink);
@@ -2030,7 +2030,7 @@ public class Documenter {
                         if (((item.sName.toUpperCase().trim() != name.toUpperCase().trim()) ||
                              (item.sParentClass.toUpperCase().trim() != parentClass.toUpperCase().trim())) ||
                             (item.sChunkType != "Methods")) continue;
-                        newValue = GetChunkTypePath(item.sChunkType) + name + item.iInstance + ".htm";
+                        newValue = getChunkTypePath(item.sChunkType) + name + item.iInstance + ".htm";
                         break;
                     }
                     if (!"".equals(name.trim()))
@@ -2042,6 +2042,11 @@ public class Documenter {
             return (sHtmlPreInterfaces + configModel.HtmlPostInterfaces);
     }
     
+    //**************************************************************************
+    // Method: createSnippetFiles
+    // 
+    // 
+    //**************************************************************************
     private void createSnippetFiles(String outputName, List<String> paramItems, boolean snippetDescr, boolean snippetExample, boolean snippetInput, boolean snippetOutput, String snippetMarker) {
         String str = outputName.substring(0, outputName.lastIndexOf("\\"));
 
@@ -2083,6 +2088,11 @@ public class Documenter {
         }
     }
 
+    //**************************************************************************
+    // Method: createSnippetFile
+    // 
+    // 
+    //**************************************************************************
     private void createSnippetFile(String filename, String snippetMarker) {
         try {
             File file = new File(filename);
@@ -2110,17 +2120,176 @@ public class Documenter {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    private void StoreTypeLink(String sType, String usedByLink, String usedByName, String usedByChunkType) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    //**************************************************************************
+    // Method: StoreTypeLink
+    // Called when we need to store that a type is being 
+    // used/referenced somewhere in the system, this routine stores the
+    // 	details so that we can build the 'Used By...' output
+    //**************************************************************************
+    private void storeTypeLink(String sItemName, String sFilename, String sUsedByName, String sUsedByType) {
+        boolean bFound = false;
+        ItemUsage iuUsage = new ItemUsage();
+        ItemUsage iuCheck = null;
+
+        if (!sItemName.toUpperCase().trim().contains("<A HREF=")) //Does the item name contain a hyperlink? 
+        {
+            return;														//No - We can't link to it then (so get out and don't store it) 
+        }
+        //Extract the item name form the hyperlink
+        sItemName = sItemName.substring(sItemName.indexOf("\">") + 2);
+        sItemName = sItemName.substring(0, sItemName.indexOf("<")).trim();
+
+        if ((!sItemName.trim().equals("")) //Do we have a name? 
+                && (!sUsedByName.trim().equals(""))) {											//Yes - Build a Usage structure
+            iuUsage.sItemName = sItemName;
+            iuUsage.sUsedByName = sUsedByName;
+            iuUsage.sFilename = sFilename;
+            iuUsage.sUsedByType = sUsedByType;
+
+			//We have our usage structure *but* we don't want repeated values (as it
+            //would result in the 'Used By...' list containing duplicate entries). 
+            //So...check to see if we already have an entry with the same data...
+            for (int iCount = 0; iCount < alItemUsage.size(); iCount++) {
+                iuCheck = (ItemUsage) alItemUsage.toArray()[iCount];
+
+                if ((sFilename.equals(iuCheck.sFilename)) //If this item matches our new item... 
+                        && (sUsedByName.equals(iuCheck.sUsedByName))
+                        && (sUsedByType.equals(iuCheck.sUsedByType))
+                        && (sItemName.equals(iuCheck.sItemName))) {
+                    bFound = true;									//...flag it and get out
+                    break;
+                }
+            }
+
+            if (!bFound) //Did we already find a matching item?
+            {
+                alItemUsage.add(iuUsage);		//No - Add it to the list
+            }
+        }
     }
 
-    
+    //**************************************************************************
+    // Method: buildTypeLink
+    // Given a set of data about a type, this routine bundles/formats
+    // the type so that, if necessary, it includes a hyperlink to the
+    // documentation for the type
+    //**************************************************************************
+    private String buildTypeLink(String sType, String sParentClass, boolean bItalic, boolean bAsText) {
+        String sResult = "";
+        String sPrepend = "";
+        String sAppend = "";
+        String sFindType = "";
+        String sFindClass = "";
+        String sPath = "";
+        String sLink = "";
+        ItemData objItem = null;
 
-    private String buildTypeLink(String sType, String parentClass, boolean b, boolean b0) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        if (sType.contains("<")) //Is the type a list/set/map (e.g. List<Integer>)?
+        {								//Yes - Get the *inner* type (e.g. Integer)
+            sPrepend = sType.substring(0, sType.indexOf("<") + 1).trim();
+            sAppend = "&gt;";
+
+            sPrepend = sPrepend.replace("<", "&lt;");
+            sPrepend = sPrepend.replace(">", "&gt;");
+
+            sType = sType.substring(sType.indexOf("<") + 1).trim();
+
+            if (sType.endsWith(">")) {
+                sType = sType.substring(0, sType.length() - 1).trim();
+            }
+        }
+
+        if (sType.trim().endsWith("[]")) //Is this old notation for an array?
+        { 										//Yes - 'Translate' it into new notation
+            sPrepend = "array&lt;";
+            sAppend = "&gt;";
+
+            sType = sType.trim();
+            sType = sType.substring(0, sType.length() - 2).trim();
+        }
+
+        if (sType.contains(".")) //Is the type within another class?
+        {										//Yes - Extract *only* the type 
+            sFindClass = sType.substring(0, sType.lastIndexOf(".")).trim();
+            sFindType = sType.substring(sType.lastIndexOf(".") + 1).trim();
+        } else {										//No - Use the whole text as the type
+            sFindType = sType;
+            sFindClass = sParentClass;
+        }
+
+        //Try to find the type in our list of things...
+        for (int iCount = 0; iCount < alItems.size(); iCount++) {
+            objItem = (ItemData) alItems.toArray()[iCount];
+
+            //If this is the correct type...
+            if ((objItem.sName.toUpperCase().trim().equals(sFindType.toUpperCase().trim()))
+                    && (objItem.sParentClass.toUpperCase().trim().equals(sFindClass.toUpperCase().trim()))) {
+                //...store the hyperlink to it
+                sPath = getChunkTypePath(objItem.sChunkType);
+
+                sLink = sPath + sFindType + Integer.toString(objItem.iInstance) + DefFileExt;
+
+                break;
+            }
+        }
+
+        if (!sLink.trim().equals("")) //If we have a link, create the HTML...
+        {
+            sResult = "<a href=\"" + sLink + "\">" + configModel.Namespace + sFindClass + "." + sFindType + "</a>";
+        } else {
+            sResult = sType; 			//...otherwise use the *original* type data (as it'll contain any prefix text)
+        }
+        if (bAsText) //Are we outputting the results as text?
+        { 					//Yes - Build up the type as a more 'text like' string
+            if (sPrepend.trim().equals("")) //Do we have anything to add onto the start of the results (e.g. 'List<')?
+            { 									//No - Just add on 'object' (e.g. 'MyType object')
+                if (!sResult.trim().equals("")) //Do we have any result data?
+                {
+                    sResult = sResult + " object"; 		//Yes - Just add 'object' to the end
+                } else {
+                    sResult = ""; 						//No...err return nothing
+                }
+            } else { 									//Yes - Add on the leading text and a trailing '>'
+                sPrepend = sPrepend.replace("&lt;", "");
+                sResult = sPrepend.toLowerCase().trim() + " of " + sResult + " objects";
+            }
+        } else //No - Just add on any leading and trailing data that we extracted
+        {
+            sResult = sPrepend + sResult + sAppend;
+        }
+
+        //If we need to make the results italic...wrap them in HTML tags
+        if (bItalic && (!sResult.trim().equals(""))) {
+            sResult = "<i>" + sResult + "</i>";
+        }
+
+        return sResult;
     }
     
-    private String GetChunkTypePath(String sChunkType) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    //**************************************************************************
+    // Routine: GetChunkTypePath
+    // Outline: Given a chunk type, this routine works out which output path
+    //			corresponds to it
+    //**************************************************************************
+    private String getChunkTypePath(String sChunkType) {
+        String sResult = "";
+
+        if (sChunkType.equals(ctClass)) {
+            sResult = "../Types/";
+        }
+        if (sChunkType.equals(ctEnum)) {
+            sResult = "../Enums/";
+        }
+        if (sChunkType.equals(ctMethod)) {
+            sResult = "../Services/";
+        }
+        if (sChunkType.equals(ctTest)) {
+            sResult = "../Tests/";
+        }
+        if (sChunkType.equals(ctUnknown)) {
+            sResult = "../Unknown/";
+        }
+
+        return sResult;
     }
 }
