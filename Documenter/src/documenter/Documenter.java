@@ -1921,7 +1921,7 @@ public class Documenter {
             
             if (interfaceData.contains("{"))
             {
-                interfaceData = extractSubString(interfaceData, "{", 1, 1);
+                interfaceData = extractSubString(interfaceData, "{", 1);
             }
             if (interfaceData.contains("}"))
             {
