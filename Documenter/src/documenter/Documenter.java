@@ -1867,7 +1867,7 @@ public class Documenter {
     // When called, this routine takes the supplied name and builds a
     // 'Used By...' HTML structure
     //**************************************************************************
-    private CharSequence createUsageList(String className, String parentClass) {
+    private String createUsageList(String className, String parentClass) {
         String sHtmlPreMethodList = "";
 
         if (configModel.AlItemUsage.size() <= 0) {
@@ -1907,8 +1907,71 @@ public class Documenter {
         return (sHtmlPreMethodList + configModel.HtmlPostMethodList);
     }
 
-    private CharSequence createPropertyList(String sOutputMethodName, String sName, String sParentClass, String sExtends, String sChunkType, int iInstance) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    //**************************************************************************
+    // Method: createPropertyList
+    // Given a set of class data, this routine creates a HTML table 
+    // containing all of the properties for that class (formatted as
+    // per the config file)
+    //**************************************************************************
+    private String createPropertyList(String outputMethodName, String className, String parentClass, String extendsClass, String itemChunkType, int instance) {
+        String sResult = "";
+            ArrayList<String> alProps = new ArrayList<String>();
+
+            //Does this class extend another class?
+            if (extendsClass.trim() != "")
+            {
+                String sItemName = buildTypeLink(extendsClass, parentClass, false, false);
+                sResult = "This class/type extends " + sItemName + ".<BR/>";
+                StoreTypeLink(sItemName, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
+            }
+
+            //Build the list of properties for this class
+            for (ItemData itemData : alItems)
+            {
+                // If this thing is a property (or a variable) *and* it's parent is the class
+                // we're interested in...add it to our list of properties
+                if (((itemData.sChunkType == "Property") || (itemData.sChunkType == "Variables")) && (itemData.sParentClass == (parentClass + "." + className)))
+                {
+                    alProps.add(itemData.sName + "[" + itemData.sType + "]");
+                }
+            }
+
+            //Did we find any properties for this class?
+            if (alProps.size() <= 0)
+            {
+                return sResult;
+            }
+            
+            java.util.Collections.sort(alProps);
+            
+            sResult = sResult + configModel.HtmlPrePropList;
+
+            //Iterate through the list of properties
+            for (String item : alProps)
+            {
+                //Get the details of the property
+                String sPropertyName = item.trim();
+                String sPropertyType = extractSubString(sPropertyName, "[", 1).trim();
+                if (sPropertyType.endsWith("]"))
+                {
+                    sPropertyType = sPropertyType.substring(0, sPropertyType.length() - 1).trim();
+                }
+                
+                sPropertyName = extractSubString(0, sPropertyName, "[", 0).trim();
+                
+                configModel.SnippetsList.add(outputMethodName + "-prop-" + sPropertyName.trim());
+                
+                //Add a hyperlink to the type (if necessary)
+                String snippetLink = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-prop-" + sPropertyName.trim() + ".flsnp\" />";
+                sPropertyType = buildTypeLink(sPropertyType, parentClass, false, false);
+                
+                //We're referencing a type...so make sure that we remember the reference (for the 'Used By...' list)
+                StoreTypeLink(sPropertyType, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
+                
+                //Add the formatted name, type etc. to the result text
+                sResult = sResult + configModel.HtmlLoopPropList.replace("[%PROPERTYNAME%]", sPropertyName).replace("[%PROPERTYTYPE%]", sPropertyType).replace("[%SNIPPETLINK%]", snippetLink);
+            }
+            return (sResult + configModel.HtmlPostPropList);
     }
 
     //**************************************************************************
@@ -1916,7 +1979,7 @@ public class Documenter {
     // 
     // 
     //**************************************************************************
-    private CharSequence createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
+    private String createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
             if (chunkType != "Interfaces") return "";
             
             if (interfaceData.contains("{"))
@@ -1979,10 +2042,70 @@ public class Documenter {
             return (sHtmlPreInterfaces + configModel.HtmlPostInterfaces);
     }
     
-    private void createSnippetFiles(String path, List<String> SnippetsList, Boolean bSnippetDescr, Boolean bSnippetExample, Boolean bSnippetInput, Boolean bSnippetOutput, String SnippetMarker) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    private void createSnippetFiles(String outputName, List<String> paramItems, boolean snippetDescr, boolean snippetExample, boolean snippetInput, boolean snippetOutput, String snippetMarker) {
+        String str = outputName.substring(0, outputName.lastIndexOf("\\"));
+
+        if (!str.endsWith("\\")) {
+            str = str + "\\";
+        }
+        if (snippetDescr) {
+            createSnippetFile(outputName + "-descr.flsnp", snippetMarker);
+        }
+        if (snippetExample) {
+            createSnippetFile(outputName + "-example.flsnp", snippetMarker);
+        }
+        if (snippetInput) {
+            createSnippetFile(outputName + "-input.flsnp", snippetMarker);
+        }
+        if (snippetOutput) {
+            createSnippetFile(outputName + "-output.flsnp", snippetMarker);
+        }
+
+        for (String item : paramItems) {
+            String text = snippetMarker;
+
+            String value = "";
+                // See if the item contains the key
+            //var kvpResult = new Map<String, String>();
+            for (String key : snippetText.keySet()) {
+                if (item.contains(key)) {
+                    // Get the String value that goes with the key 
+
+                    value = snippetText.get(key);
+                    break;
+                }
+            }
+            if (value.equals("") == false) {
+                text = value;
+            }
+
+            createSnippetFile(str + item + ".flsnp", text);
+        }
     }
 
+    private void createSnippetFile(String filename, String snippetMarker) {
+        try {
+            File file = new File(filename);
+
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
+                writer.write("<html xmlns:MadCap=\"http://www.madcapsoftware.com/Schemas/MadCap.xsd\" MadCap:lastBlockDepth=\"2\" MadCap:lastHeight=\"140\" MadCap:lastWidth=\"802\">");
+                writer.write("    <body>");
+                writer.write("    <!--Insert text, data etc. here-->");
+                writer.write("    <p>&#160;" + snippetMarker + "</p>");
+                writer.write("    </body>");
+                writer.write("</html>");
+                writer.flush();
+            }
+        } catch (IOException e) {
+            debugOut(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
     private String getDocData(String sPlaceholder, String sName, String sParentClass) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
