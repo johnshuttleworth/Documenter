@@ -13,11 +13,15 @@ import documenter.Services.ConfigurationSvc;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.text.Format;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -442,11 +446,231 @@ public class Documenter {
 
     //**************************************************************************
     // Method: generateOutputDocs
-    // 
+    // Given an output folder, this routine checks which type(s) of items we want
+    // to create documents for...and then creates them
     //
     //**************************************************************************
-    private void generateOutputDocs(String OutputFolder) {
+    private void generateOutputDocs(String outputFolder) {
+        ArrayList<String> tocList = new ArrayList<String>();
 
+        if (!outputFolder.endsWith("\\")) //Does our output folder end with a '\'?
+        {
+            outputFolder += "\\"; 		//Nope - Add one on
+        }
+
+        alItemUsage.clear();
+
+        if (configModel.IncludeUnknown) {
+            CreateDocs(outputFolder + UnknownFolder, outputFolder, ctUnknown, configModel.UnknownTemplateFolder, tocList, true);
+        }
+        if (configModel.IncludeTests) {
+            CreateDocs(outputFolder + TestsFolder, outputFolder, ctTest, configModel.TestTemplateFolder, tocList, true);
+        }
+        if (configModel.IncludeMethods) {
+            CreateDocs(outputFolder + ServicesFolder, outputFolder, ctMethod, configModel.MethodsTemplateFolder, tocList, true);
+        }
+        if (configModel.IncludeWebServices) {
+            CreateDocs(outputFolder + ServicesFolder, outputFolder, ctWebServices, configModel.WebServicesTemplateFolder, tocList, true);
+        }
+        if (configModel.IncludeInterfaces) {
+            CreateDocs(outputFolder + InterfacesFolder, outputFolder, ctInterfaces, configModel.InterfaceTemplateFolder, tocList, true);
+        }
+        if (configModel.IncludeClasses) {
+            CreateDocs("", outputFolder, ctClass, configModel.ClassTemplateFolder, tocList, false);
+        }
+        if (configModel.IncludeClasses) {
+            CreateDocs(outputFolder + TypesFolder, outputFolder, ctClass, configModel.ClassTemplateFolder, tocList, true);
+        }
+        if (configModel.IncludeEnums) {
+            CreateDocs(outputFolder + EnumsFolder, outputFolder, ctEnum, configModel.EnumTemplateFolder, tocList, true);
+        }
+        if ((configModel.Toc == 1) || (configModel.Toc == 3)) {
+            GenerateHtmltoc(tocList, outputFolder, IndexFolder);
+        }
+        if ((configModel.Toc == 2) || (configModel.Toc == 3)) {
+            GenerateFlareToc(tocList, outputFolder, TocFolder);
+        }
+    }
+    
+    //**************************************************************************
+    // Method: CreateDocs
+    // Outline: When called, this routine reads in the specified template file
+    //			(if it exists) and then attempts to use that file's data to
+    //			create a file for each thing of the type specified (e.g. method,
+    //			type). To do this it uses the placeholders in the template file
+    //			to insert values from the thing into HTML text...and then saves
+    //			the resultant text to an output file
+    //**************************************************************************
+    private void CreateDocs(String docPath, String rootPath, String docType, String docTemplate, List<String> tocList, Boolean createFiles) {
+        String path = "";
+        String sData = "";
+            ArrayList<String> alDocPlaceholders = new ArrayList<String>();
+            docTemplate = docTemplate.trim();
+            if (docTemplate != "")
+            {
+                //System.out.printf("Creating output files: %s...", sType);
+
+        //Load the template data
+        BufferedReader inTemplate;
+        try {
+            inTemplate = new BufferedReader(new FileReader(docTemplate));
+
+            String line;
+            while ((line = inTemplate.readLine()) != null) {
+                sData = sData + line + "\n";
+            }
+
+            inTemplate.close();
+        } catch (FileNotFoundException e) {
+            globalAbortText = "FileNotFound (Template): " + docTemplate + " Error: " + e.getMessage();
+            globalAbort = true;
+        } catch (IOException e) {
+            globalAbortText = "IOException (Template): " + docTemplate + " Error: " + e.getMessage();
+            globalAbort = true;
+        }
+
+        if (globalAbort) {
+            return;
+        }
+                sData = FormatPlaceholders(sData, alDocPlaceholders);
+                
+                if (!docPath.endsWith("\\"))
+                {
+                    docPath += "\\";
+                }
+                
+                if (!rootPath.endsWith("\\"))
+                {
+                    rootPath += "\\";
+                }
+
+                for (ItemData itemData : alItems)
+                {
+                    // THese files are covered under web services so don't copy them to the types folder
+                    if (itemData.sOutputFile.startsWith("CODA"))
+                    {
+                        //System.Diagnostics.Debug.WriteLine(objItem.sOutputFile);
+                        continue;
+                    }
+
+                    if (((itemData.sChunkType == docType) && (((itemData.sParentClass.trim() != "") || !configModel.SkipRootClasses) || (itemData.sChunkType != "Classes/Types"))) && (((itemData.sChunkType != "Methods") || (itemData.MethodType != 1)) || !configModel.SkipConstructor))
+                    {
+                        //Are we creating files?
+                        if (createFiles)
+                        {
+                            path = docPath + itemData.sOutputFile;
+                                
+                             //Does the output file already exist?
+                    if ((new File(path)).isFile())
+                    {
+                        //Yes - Work out what to do. Are we overwriting?
+                        if (!configModel.bOverwriteDocs)
+                        {
+                            //No - Create a backup of the file
+                            String sBackupFile = DateToShortDateString(new Date()) + " " + DateToShortTimeString(new Date());
+                            sBackupFile = sBackupFile.replace("\\", "-").replace(":", "-").replace("/", "").trim();
+
+                            sBackupFile = path + itemData.sName + Integer.toString(itemData.iInstance) + "-" + sBackupFile + DefFileExt;
+
+                            try {
+                                copyFile(path, sBackupFile);
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        (new java.io.File(path)).delete();
+                    }
+                        }
+                        String source = itemData.sOutputFile;
+                        if (source.contains("."))
+                        {
+                            source = source.substring(0, source.indexOf('.')).trim();
+                        }
+                        String sOutputMethodName = GenerateSnippetFilename(itemData);
+
+                        //if (itemData.sName.ToUpper() == "HEADERDETAILS")
+                        //{
+                        //    sName = itemData.sName;
+                        //}
+
+                        String sName = sData;
+                        String sUsedByName = itemData.sName;
+                        if (itemData.sParentClass.trim() != "")
+                        {
+                            sUsedByName = itemData.sParentClass + "." + sUsedByName;
+                        }
+                        sUsedByName = configModel.Namespace + sUsedByName;
+                        configModel.SnippetsList.clear();
+
+                        sName = sName.replace("[%FULLNAME%]", sUsedByName);
+                        sName = sName.replace("[%NAME%]", itemData.sName);
+                        sName = sName.replace("[%ITEMTYPE%]", itemData.sChunkType);
+                        sName = sName.replace("[%FILENAME%]", itemData.sSourceFile);
+                        sName = sName.replace("[%INPUTPARAMS%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", false));
+                        sName = sName.replace("[%INPUTPARAMSCR%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, NewLine, configModel.ParamIndent, false));
+                        sName = sName.replace("[%INPUTPARAMSTABLE%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", true));
+                        sName = sName.replace("[%PARENT%]", itemData.sParentClass).replace("[%RETURNTYPE%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, false));
+                        sName = sName.replace("[%RETURNTYPETEXT%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, true));
+                        sName = sName.replace("[%VALUES%]", itemData.sValues).replace("[%VALUESTABLE%]", CreateValuesTable(sOutputMethodName, itemData.sValues));
+                        sName = sName.replace("[%USAGELIST%]", createUsageList(itemData.sName, itemData.sParentClass));
+                        sName = sName.replace("[%INTERFACELIST%]", createInterfaceList(itemData.sName, itemData.iInstance, itemData.sChunkType, itemData.sChunkData, itemData.sParentClass));
+                        sName = sName.replace("[%PROPERTYLIST%]", createPropertyList(sOutputMethodName, itemData.sName, itemData.sParentClass, itemData.sExtends, itemData.sChunkType, itemData.iInstance));
+                        sName = sName.replace("[%VISIBILITY%]", itemData.sVisibility);
+                        sName = sName.replace("[%RAWDATA%]", itemData.sChunkData);
+                        sName = sName.replace("[%PRODUCTNAMESPACE%]", configModel.Namespace);
+                        sName = sName.replace("[%OUTPUTNAME%]", source);
+                        sName = sName.replace("[%OUTPUTFILENAME%]", itemData.sOutputFile);
+                        sName = sName.replace("[%OUTPUTPATH%]", docPath);
+                        sName = sName.replace("[%DATE%]", DateToShortTimeString(new Date()));
+                        sName = sName.replace("[%TIME%]", DateToShortTimeString(new Date()));
+
+                        String str10 = sName;
+                        sName = sName.replace("[%SNIPPETDESCR%]", sOutputMethodName + "-descr.flsnp");
+                        Boolean bSnippetDescr = (str10.equals(sName) == false);
+                        str10 = sName;
+                        sName = sName.replace("[%SNIPPETEXAMPLE%]", sOutputMethodName + "-example.flsnp");
+                        Boolean bSnippetExample = (str10.equals(sName) == false);
+                        str10 = sName;
+                        sName = sName.replace("[%SNIPPETINPUT%]", sOutputMethodName + "-input.flsnp");
+                        Boolean bSnippetInput = (str10.equals(sName) == false);
+                        str10 = sName;
+                        sName = sName.replace("[%SNIPPETOUTPUT%]", sOutputMethodName + "-output.flsnp");
+                        Boolean bSnippetOutput = (str10.equals(sName) == false);
+                        
+                        for (String placeHolder : alDocPlaceholders)
+                        {
+                            String sPlaceholder = placeHolder;
+                            String newValue = getDocData(sPlaceholder, itemData.sName, itemData.sParentClass);
+                            sName = sName.replace(sPlaceholder, newValue);
+                        }
+
+//                        StatusMsg = "Generating:";
+                        if (createFiles)
+                        {
+                            //Yes - Create the file (and create an entry in the TOC if we have to)
+                    //We have the data for this file...so save it
+                    BufferedWriter writer = null;
+                    try {
+                        writer = new BufferedWriter(new FileWriter(path));
+                        writer.write(sName);
+                        writer.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                            
+                            if (configModel.Toc != 0)
+                            {
+                                tocList.add(itemData.sChunkType + "[" + sUsedByName + "]" + path);
+                            }
+                            if (configModel.IncludeSnippets)
+                            {
+                                createSnippetFiles(String.format("%s%s\\%s", rootPath, SnippetsFolder , sOutputMethodName), configModel.SnippetsList, bSnippetDescr, bSnippetExample, bSnippetInput, bSnippetOutput, configModel.SnippetMarker);
+                            }
+                        }
+                    }
+                }
+            }
     }
     
     private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
@@ -1316,7 +1540,128 @@ public class Documenter {
 
         return sbResult.toString();
     }
-    
+
+    private void GenerateHtmltoc(ArrayList<String> tocList, String outputFolder, String IndexFolder) {
+        
+    }
+
+    private void GenerateFlareToc(ArrayList<String> tocList, String outputFolder, String TocFolder) {
+        
+    }
+
+    //**************************************************************************
+    // Routine: copyFile
+    // Outline: Given a source file and a destination file, this routine, 
+    // copies from the source file to the destination file
+    //**************************************************************************
+    private void copyFile(String sourceFilename, String destFilename) throws IOException {
+        FileChannel source = null;
+        FileChannel destination = null;
+
+        File sourceFile = new File(sourceFilename);
+        File destFile = new File(destFilename);
+
+        if (!destFile.exists()) {
+            destFile.createNewFile();
+        }
+
+        try {
+            source = new FileInputStream(sourceFile).getChannel();
+            destination = new FileOutputStream(destFile).getChannel();
+            destination.transferFrom(source, 0, source.size());
+        } finally {
+            if (source != null) {
+                source.close();
+            }
+
+            if (destination != null) {
+                destination.close();
+            }
+        }
+    }
+   
+    //**************************************************************************
+    // Method: CreateValuesTable
+    // Given a set of delimited text, this routine converts that text
+    // into a list and then uses it to construct a HTML table (with one
+    // item in the list having one row in the output table). The HTML 
+    // used to construct the table is that specified in the config file
+    //**************************************************************************
+    private String CreateValuesTable(String sOutputMethodName, String sData) {
+        String[] strArray = sData.split("\\,");
+        String sHtmlPreEnumTable = configModel.HtmlPreEnumTable;
+        for (String item : strArray) {
+            String newValue;
+            if (item.trim() == "") {
+                newValue = "";
+            } else {
+                configModel.SnippetsList.add(sOutputMethodName + "-value-" + item.trim());
+                newValue = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + sOutputMethodName + "-value-" + item.trim() + ".flsnp\" />";
+            }
+            sHtmlPreEnumTable = sHtmlPreEnumTable + configModel.HtmlLoopEnumTable.replace("[%ENUMVALUE%]", item).replace("[%SNIPPETLINK%]", newValue);
+        }
+        return (sHtmlPreEnumTable + configModel.HtmlPostEnumTable);
+    }
+
+    //**************************************************************************
+    // Method: GenerateSnippetFilename
+    // 
+    // 
+    //**************************************************************************
+    private String GenerateSnippetFilename(ItemData itemData) {
+        String str = itemData.sParentClass + "-" + itemData.sName;
+        if (((itemData.sChunkType == "Methods") || (itemData.sChunkType == "Tests")) || (itemData.sChunkType == "Web Services")) {
+            if ("".equals(itemData.sParams.trim())) {
+                return (str + "0");
+            }
+            String[] strArray = itemData.sParams.toUpperCase().split("\\,");
+            str = String.format("%s%d", str, strArray.length);
+
+            for (String item : strArray) {
+                String tempStr
+                        = item.replace(" ", ".")
+                        .replace("<", ".")
+                        .replace("[", ".")
+                        .replace(">", "")
+                        .replace("]", "")
+                        .replace("DATE", "D.T")
+                        .replace("SOBJECT", "S.");
+
+                    //if (tempStr != item)
+                //{
+                //    Console.WriteLine("");    
+                //}
+                String[] strArray2 = tempStr.split("\\.");
+
+                for (String fileName : strArray2) {
+                    if (fileName.trim().equals("") == false) {
+                        char firstChar = fileName.charAt(0);
+                        str = String.format("%s%c", str, firstChar);
+                    }
+                }
+            }
+        }
+        return str;
+    }
+
+    //**************************************************************************
+    // Method: DateToShortTimeString
+    // Given a date, this routine formats it as HH:mm:ss format
+    //**************************************************************************
+    private String DateToShortTimeString(java.util.Date date) {
+        Format formatter = new SimpleDateFormat("HH:mm:ss");
+        return formatter.format(date);
+    }
+
+    //**************************************************************************
+    // Routine: DateToShortDateString
+    // Outline: Given a date, this routine formats it in yyyy-MM-dd format
+    //**************************************************************************
+    private String DateToShortDateString(java.util.Date date) {
+        Format formatter = new SimpleDateFormat("yyyy-MM-dd");
+        return formatter.format(date);
+    }
+
     //**************************************************************************
     // Class:   RefObject
     // Outline: Class used to simulate the ability to pass arguments by 
@@ -1342,5 +1687,197 @@ public class Documenter {
             //if (lowercaseName.startsWith("codaapi") && lowercaseName.endsWith(".cls"))
             return lowercaseName.startsWith(configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls");
         }
+    }
+    
+    //**************************************************************************
+    // Method: createParamsData
+    // Given a set of data, this routine builds an output HTML 
+    // structure detailing the parameters, types, hyperlinks (where necessary) etc.
+    // 
+    //**************************************************************************    
+    private String createParamsData(String outputMethodName, String usedByName, int usedByInstance, String usedByChunkType, String data, String parentClass, String lineEnd, String lineStart, Boolean table) {
+        Boolean flag = false;
+        Boolean bError = false;
+        int num = 0;
+        ArrayList<String> alParams = new ArrayList<String>();
+        String htmlPreParamTable = "";
+        String sParam = "";
+        String newValue;
+        String sType;
+        String str6;
+
+        //Build the list of parameters
+        List<String> list2 = new ArrayList<String>();
+
+        //Strip out any '/*...*/' comments (it's easier to do here than later on)
+        while (data.contains("/*") && !bError) {
+            String sComment = data.substring(data.indexOf("/*"));
+
+            data = data.substring(0, data.indexOf("/*"));
+
+            if (sComment.contains("*/")) {
+                sComment = sComment.substring(sComment.indexOf("*/") + 2).trim();
+                data = data + sComment;
+            } else {
+                bError = true;
+            }
+        }
+
+        //Iterate through the data working out if there are any nested parameters (e.g. List<Int, List<String>>)... 
+        for (int iCount = 0; iCount < data.length(); iCount++) {
+            //As parameters *could* be lists/sets/maps (and possibly *nested*) we
+            //need to keep a track of how 'nested' we are
+            switch (data.charAt(iCount)) {
+                case '<':
+                    num++;
+                    sParam = sParam + "<";
+                    break;
+
+                case '>':
+                    num--;
+                    sParam = sParam + ">";
+                    break;
+
+                case ',':
+                    //Are we inside another parameter (e.g. List<Integer, List<...)?
+                    if (num == 0) {
+                        list2.add(sParam.trim());
+                        sParam = "";
+                    } else {
+                        //Yes - Keep constructing the parameter
+                        sParam += ",";
+                    }
+                    break;
+            }
+            // NOT SURE ABOUT THIS
+            sParam += data.charAt(iCount);
+        }
+        if (sParam.trim() != "") {
+            list2.add(sParam);
+        }
+
+        //Check for any inline '//...' comments...and remove them
+        for (int j = 0; j < list2.size(); j++) {
+            sParam = list2.get(j);
+            if (sParam.trim().startsWith("//") && sParam.contains("\n")) {
+                sParam = sParam.substring(sParam.indexOf("\n")).trim();
+                list2.set(j, sParam);
+            }
+        }
+
+        String[] aParams = list2.toArray(new String[0]);
+
+        if (aParams.length == 0) {
+            flag = true;
+        }
+        if ((aParams.length == 1) && (aParams[0].trim() == "")) {
+            flag = true;
+        }
+        if (table) {
+            if (flag) {
+                return "This method has no input parameters";
+            }
+            htmlPreParamTable = configModel.HtmlPreParamTable;
+            for (String arrayData : aParams) {
+                str6 = arrayData.trim().contains(" ") ? " " : ">";
+
+                newValue = arrayData.trim();
+                newValue = newValue.substring(newValue.lastIndexOf(str6)).trim();
+
+                configModel.SnippetsList.add(outputMethodName + "-param-" + newValue.trim());
+                String str7 = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-param-" + newValue.trim() + ".flsnp\" />";
+
+                sType = arrayData.trim();
+                sType = sType.substring(0, sType.lastIndexOf(str6)).trim();
+
+                sType = buildTypeLink(sType, parentClass, false, false);
+                htmlPreParamTable = htmlPreParamTable + configModel.HtmlLoopParamTable.replace("[%PARAMNAME%]", newValue).replace("[%PARAMTYPE%]", sType).replace("[%SNIPPETLINK%]", str7);
+            }
+            return (htmlPreParamTable + configModel.HtmlPostParamTable);
+        }
+        if (!flag) {
+            for (String arrayData : aParams) {
+                str6 = arrayData.trim().contains(" ") ? " " : ">";
+
+                newValue = arrayData.trim();
+                newValue = newValue.substring(newValue.lastIndexOf(str6)).trim();
+
+                configModel.SnippetsList.add(outputMethodName + "-param-" + newValue.trim());
+
+                sType = arrayData.trim();
+                sType = sType.substring(0, sType.lastIndexOf(str6)).trim();
+                sType = buildTypeLink(sType, parentClass, true, false);
+                String usedByLink = buildUsedByLink(usedByName, usedByChunkType, usedByInstance);
+                StoreTypeLink(sType, usedByLink, usedByName, usedByChunkType);
+                if ((sType + " " + newValue).trim() != "") {
+                    alParams.add(sType + " " + newValue);
+                }
+            }
+            for (int n = 0; n < alParams.size(); n++) {
+                if (n != 0) {
+                    htmlPreParamTable = htmlPreParamTable + ", " + lineEnd;
+                }
+                htmlPreParamTable = htmlPreParamTable + lineStart + alParams.get(n).toString().trim();
+            }
+        }
+        return htmlPreParamTable;
+    }
+    
+
+    //**************************************************************************
+    // Routine: BuildUsedByLink
+    // Outline: Given a name, chunk type and instance, this routine builds a
+    //			hyperlink to the corresponding help file
+    //**************************************************************************
+    private String buildUsedByLink(String sName, String sChunkType, int iInstance) {
+        String sLink = "";
+
+        sLink = sName.trim();
+
+        if (sLink.contains(".")) //If the thing is within something else...
+        {
+            sLink = sLink.substring(sLink.lastIndexOf(".") + 1).trim();	//...get *only* the thing  
+        }
+        sLink = GetChunkTypePath(sChunkType) + sLink + (new Integer(iInstance)).toString() + DefFileExt;
+
+        return sLink;
+    }
+    
+    private String buildReturnLink(Integer MethodType, String sUsedByName, int iInstance, String sChunkType, String sType, String sParentClass, boolean b) {
+        return "";
+    }
+
+    private CharSequence createUsageList(String sName, String sParentClass) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private CharSequence createPropertyList(String sOutputMethodName, String sName, String sParentClass, String sExtends, String sChunkType, int iInstance) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private CharSequence createInterfaceList(String sName, int iInstance, String sChunkType, String sChunkData, String sParentClass) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    private void createSnippetFiles(String path, List<String> SnippetsList, Boolean bSnippetDescr, Boolean bSnippetExample, Boolean bSnippetInput, Boolean bSnippetOutput, String SnippetMarker) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    private String getDocData(String sPlaceholder, String sName, String sParentClass) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    private void StoreTypeLink(String sType, String usedByLink, String usedByName, String usedByChunkType) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    
+
+    private String buildTypeLink(String sType, String parentClass, boolean b, boolean b0) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    private String GetChunkTypePath(String sChunkType) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
