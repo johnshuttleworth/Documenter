@@ -28,6 +28,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -35,11 +36,14 @@ import java.util.Map;
  */
 public class Documenter {
 
+    
     private Integer outputtedChunks = 0;
     private Integer processedChunks = 0;
     private Integer outputChunkEnum = 0;
+    private Integer outputChunkProperty = 0;
     private Integer excludedFiles = 0;
     private Integer createDocsEnums = 0;
+    private Integer createdSnippetFiles = 0;
     
     private static final String NewLine = "\n";
 
@@ -155,7 +159,7 @@ public class Documenter {
         debugOut(message);
         System.out.printf(message + NewLine);
         
-        message = String.format("CreateDocsEnums: %d", createDocsEnums);
+        message = String.format("CreateDocsEnums: %d CreatedSnippetFiles %d OutputChunkProperty %d", createDocsEnums, createdSnippetFiles, outputChunkProperty);
         debugOut(message);
         System.out.printf(message + NewLine);
     }
@@ -493,10 +497,10 @@ public class Documenter {
             CreateDocs(outputFolder + EnumsFolder, outputFolder, ctEnum, configModel.EnumTemplateFolder, tocList, true);
         }
         if ((configModel.Toc == 1) || (configModel.Toc == 3)) {
-            GenerateHtmltoc(tocList, outputFolder, IndexFolder);
+            GenerateHtmltoc(tocList, String.format("%s%s", outputFolder, IndexFolder));
         }
         if ((configModel.Toc == 2) || (configModel.Toc == 3)) {
-            GenerateFlareToc(tocList, outputFolder, TocFolder);
+            GenerateFlareToc(tocList, String.format("%s%s", outputFolder, TocFolder));
         }
     }
     
@@ -557,12 +561,13 @@ public class Documenter {
                 }
 
                 // This is for debugging
-                if ((itemData.sChunkType == docType) && docType == ctEnum) {
+                if ((itemData.sChunkType == null ? docType == null : itemData.sChunkType.equals(docType)) && (docType == null ? ctEnum == null : docType.equals(ctEnum))) {
                     createDocsEnums++;
                 }
 
-                if (((itemData.sChunkType == docType) && (((itemData.sParentClass.trim() != "") || !configModel.SkipRootClasses) || (itemData.sChunkType != "Classes/Types"))) &&
-                        (((itemData.sChunkType != "Methods") || (itemData.MethodType != 1)) || !configModel.SkipConstructor)) {
+                if (((itemData.sChunkType == null ? docType == null : itemData.sChunkType.equals(docType)) &&
+                        (((!"".equals(itemData.sParentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.sChunkType.equals(ctClass)))) &&
+                        (((!itemData.sChunkType.equals(ctMethod)) || (itemData.MethodType != 1)) || !configModel.SkipConstructor)) {
                     
                     //Are we creating files?
                     if (createFiles) {
@@ -600,7 +605,7 @@ public class Documenter {
                     //}
                     String sName = sData;
                     String sUsedByName = itemData.sName;
-                    if (itemData.sParentClass.trim() != "") {
+                    if (!"".equals(itemData.sParentClass.trim())) {
                         sUsedByName = itemData.sParentClass + "." + sUsedByName;
                     }
                     sUsedByName = configModel.Namespace + sUsedByName;
@@ -659,6 +664,7 @@ public class Documenter {
 //                }
                             writer = new BufferedWriter(new FileWriter(path));
                             writer.write(sName);
+                            writer.flush();
                             writer.close();
                         } catch (IOException e) {
                             e.printStackTrace();
@@ -946,7 +952,7 @@ public class Documenter {
 
                         iIndent = textCount(result, "{");
                         iIndent -= textCount(result, "}");
-                        if ((data.argvalue == "") && (iIndent != 0))
+                        if (("".equals(data.argvalue)) && (iIndent != 0))
                                 {
                                     data.argvalue = data.argvalue.trim();
 //                                    str4 = str4.Trim();
@@ -1024,7 +1030,7 @@ public class Documenter {
                     if (str4.endsWith("{")) {
                         str4 = str4.substring(0, str4.length() - 1).trim();
                     }
-                    if (parentClass.trim() == "") {
+                    if ("".equals(parentClass.trim())) {
                         processChunk(nextChunk, str4, filename);
                     } else {
                         processChunk(nextChunk, parentClass + "." + str4, filename);
@@ -1045,7 +1051,7 @@ public class Documenter {
     private void outputChunk(String sChunkType, String sChunk, String sParentClass, String sFilename) {
         outputtedChunks++;
         
-        if (sChunk.trim() != "")
+        if (!"".equals(sChunk.trim()))
             {
                 String str;
                 
@@ -1079,7 +1085,8 @@ public class Documenter {
                     newItem.sSourceFile = sFilename;
                     newItem.iInstance = 1;
 
-
+if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebServices))
+    debugOut("");
                     switch (sChunkType)
                     {
                         case ctClass:
@@ -1112,6 +1119,7 @@ public class Documenter {
                             break;
 
                         case ctProperty:
+                            outputChunkProperty++;
                             newItem = decodeProperty(newItem);
                             break;
 
@@ -1169,10 +1177,10 @@ public class Documenter {
                         }
                         newItem.sOutputFile = newItem.sName + newItem.iInstance + ".htm";
                         alItems.add(newItem);
-                        if(debugPrint)
-                        {
-                            debugOut("DEBUG: allItems.add   " + newItem.sOutputFile + "    " + newItem.sChunkType);
-                        }
+//                        if(debugPrint)
+//                        {
+//                            debugOut("DEBUG: allItems.add   " + newItem.sOutputFile + "    " + newItem.sChunkType);
+//                        }
                     }
                 }
             }
@@ -1282,12 +1290,12 @@ public class Documenter {
             newItem.sName = sChunkData.substring(sChunkData.lastIndexOf(" ")).trim();
             sChunkData = sChunkData.substring(0, sChunkData.lastIndexOf(" ")).trim();
             newItem.sType = extractReturnType(sChunkData);
-            if (newItem.sType == "[CONSTRUCTOR]")
+            if ("[CONSTRUCTOR]".equals(newItem.sType))
             {
                 newItem.sType = "";
                 newItem.MethodType = 1;
             }
-            if (newItem.sVisibility.toUpperCase().trim() == "WEBSERVICE")
+            if ("WEBSERVICE".equals(newItem.sVisibility.toUpperCase().trim()))
             {
                 newItem.MethodType = 2;
             }
@@ -1590,12 +1598,163 @@ public class Documenter {
         return sbResult.toString();
     }
 
-    private void GenerateHtmltoc(ArrayList<String> tocList, String outputFolder, String IndexFolder) {
+    //**************************************************************************
+    // Method: GenerateHtmltoc
+    // 
+    // 
+    // 
+    //**************************************************************************
+    private void GenerateHtmltoc(ArrayList<String> tocList, String outputFolder) {
+        String upperCaseHeading = "";
+
+        java.util.Collections.sort(tocList);
         
+        if (!outputFolder.endsWith("\\")) {
+            outputFolder += "\\";
+        }
+
+        try {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFolder + "index.htm"))) {
+                writer.write("<Table>");
+                
+                for (String tocItem : tocList) {
+                    String heading = tocItem.substring(0, tocItem.indexOf("[")).trim();
+                    String fullFilename = tocItem.substring(tocItem.indexOf("]") + 1).trim();
+                    String displayText = tocItem.substring(tocItem.indexOf("[") + 1).trim();
+                    displayText = displayText.substring(0, displayText.indexOf("]")).trim();
+                    if (!heading.toUpperCase().trim().equals(upperCaseHeading)) {
+                        writer.write("<tr><td>" + heading + "</a></td><td></td></tr>");
+                        upperCaseHeading = heading.toUpperCase().trim();
+                    }
+                    String linkText = fullFilename.substring(outputFolder.length()).trim();
+                    if (!configModel.IncludeTocFullNames && displayText.contains("\\.")) {
+                        displayText = displayText.substring(displayText.lastIndexOf(".") + 1).trim();
+                    }
+                    writer.write("<tr><td></td><td><a href=\"" + linkText + "\">" + displayText + "</a></td></tr>");
+                }
+                writer.write("</table>");
+            }
+        } catch (IOException e) {
+        }
     }
 
-    private void GenerateFlareToc(ArrayList<String> tocList, String outputFolder, String TocFolder) {
-        
+    private void GenerateFlareToc(ArrayList<String> tocList, String outputFolder) {
+        String upperCaseHeading = "";
+            String tempSource = "";
+            
+            java.util.Collections.sort(tocList);
+
+            if (!outputFolder.endsWith("\\"))
+            {
+                outputFolder += "\\";
+            }
+
+            try {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFolder + "PrimaryTOC.fltoc"))) {
+                
+                writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + NewLine);
+            writer.write("<CatapultToc" + NewLine);
+            writer.write("  Version=\"1\">" + NewLine);
+            if (configModel.TocPreNodes.trim() != "")
+            {
+//                writer.write(TocLinks.GenerateFlareXml(configModel.TocPreNodes).trim());
+            }
+            writer.write("  <TocEntry" + NewLine);
+            writer.write("    Title=\"API Reference\"" + NewLine);
+
+            writer.write("    Link=\"/Content/Reference/Reference.htm\">" + NewLine);
+
+            for (String tocItem : tocList)
+            {
+                String heading = extractSubString(0, tocItem, "[", 0 ).trim();
+                String fullFilename = extractSubString(tocItem, "]", 1).trim();
+                String displayText = extractSubString(tocItem, "[", 1).trim();
+                displayText = extractSubString(0, displayText, "]", 0).trim();
+
+                String source;
+                if (heading.toUpperCase().trim() != upperCaseHeading)
+                {
+                    if (upperCaseHeading.trim() != "")
+                    {
+                        writer.write("      </TocEntry>" + NewLine);
+                        writer.write("    </TocEntry>" + NewLine);
+                    }
+                    source = displayText;
+                    if (configModel.Namespace.trim() != "")
+                    {
+                        source = source.substring(configModel.Namespace.length()).trim();
+                    }
+                    if (source.contains("\\."))
+                    {
+                        source = source.substring(0, source.indexOf(".")).trim();
+                    }
+                    tempSource = source;
+                    writer.write("    <TocEntry" + NewLine);
+                    writer.write("      Title=\"" + heading + "\">" + NewLine);
+                    writer.write("      <TocEntry" + NewLine);
+                    writer.write("        Title=\"" + source + "\">" + NewLine);
+                    upperCaseHeading = heading.toUpperCase().trim();
+                }
+                else
+                {
+                    source = displayText;
+                    if (configModel.Namespace.trim() != "")
+                    {
+                        source = source.substring(configModel.Namespace.length()).trim();
+                    }
+                    if (source.contains("\\."))
+                    {
+                        source = source.substring(0, source.indexOf(".")).trim();
+                    }
+                    if (tempSource != source)
+                    {
+                        writer.write("      </TocEntry>" + NewLine);
+                        writer.write("      <TocEntry" + NewLine);
+                        writer.write("        Title=\"" + source + "\">" + NewLine);
+                        tempSource = source;
+                    }
+                }
+
+                //fullFilename = Path.GetFileName(fullFilename).Replace(@"\", "/").trim();
+                
+                // We need to do this to get the sub folder which is  type
+                String pattern = Pattern.quote(System.getProperty("file.separator"));
+                String[] filenameParts = fullFilename.split(pattern);
+                
+                String typeName = filenameParts[filenameParts.length - 2];
+                String fileName = filenameParts[filenameParts.length - 1];
+
+                String subFolderAndFilename = String.format("%s/%s", typeName, fileName);
+                //string subFolderAndFilename = fullFilename.Substring()
+                //fullFilename = fullFilename.Substring(folder.Length).Replace(@"\", "/").trim();
+                
+                if (!configModel.IncludeTocFullNames && displayText.contains("\\."))
+                {
+                    displayText = extractSubString(displayText, ".", 1).trim();
+                }
+                writer.write("        <TocEntry" + NewLine);
+                writer.write("          Title=\"" + displayText + "\"" + NewLine);
+                writer.write("          Link=\"/Content/Reference/" + subFolderAndFilename + "\" />" + NewLine);
+                //writer.write(string.Format("          Link=\"/Content/Reference/{0}/{1} \" />", typeName, fileName));
+            }
+            if (upperCaseHeading.trim() != "")
+            {
+                writer.write("      </TocEntry>" + NewLine);
+                writer.write("    </TocEntry>" + NewLine);
+            }
+            writer.write("  </TocEntry>" + NewLine);
+            if (configModel.TocPostNodes.trim() != "")
+            {
+//                writer.write(TocLinks.GenerateFlareXml(configModel.TocPostNodes).trim());
+            }
+            writer.write("</CatapultToc>" + NewLine);
+            writer.flush();
+            writer.close();
+                
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //**************************************************************************
@@ -1641,7 +1800,7 @@ public class Documenter {
         String sHtmlPreEnumTable = configModel.HtmlPreEnumTable;
         for (String item : strArray) {
             String newValue;
-            if (item.trim() == "") {
+            if ("".equals(item.trim())) {
                 newValue = "";
             } else {
                 configModel.SnippetsList.add(sOutputMethodName + "-value-" + item.trim());
@@ -1659,7 +1818,7 @@ public class Documenter {
     //**************************************************************************
     private String GenerateSnippetFilename(ItemData itemData) {
         String str = itemData.sParentClass + "-" + itemData.sName;
-        if (((itemData.sChunkType == "Methods") || (itemData.sChunkType == "Tests")) || (itemData.sChunkType == "Web Services")) {
+        if ((("Methods".equals(itemData.sChunkType)) || ("Tests".equals(itemData.sChunkType))) || ("Web Services".equals(itemData.sChunkType))) {
             if ("".equals(itemData.sParams.trim())) {
                 return (str + "0");
             }
@@ -1841,7 +2000,7 @@ public class Documenter {
         if (aParams.length == 0) {
             flag = true;
         }
-        if ((aParams.length == 1) && (aParams[0].trim() == "")) {
+        if ((aParams.length == 1) && ("".equals(aParams[0].trim()))) {
             flag = true;
         }
         if (table) {
@@ -1901,9 +2060,7 @@ public class Documenter {
     //			hyperlink to the corresponding help file
     //**************************************************************************
     private String buildUsedByLink(String sName, String sChunkType, int iInstance) {
-        String sLink = "";
-
-        sLink = sName.trim();
+        String sLink = sName.trim();
 
         if (sLink.contains(".")) //If the thing is within something else...
         {
@@ -1914,8 +2071,35 @@ public class Documenter {
         return sLink;
     }
     
-    private String buildReturnLink(Integer MethodType, String sUsedByName, int iInstance, String sChunkType, String sType, String sParentClass, boolean b) {
-        return "";
+    private String buildReturnLink(Integer methodType, String usedByName, int usedByInstance, String usedByChunkType, String returnType, String parentClass, boolean asText) {
+        String data;
+
+            String methodTypeTxt = "service";
+            if (methodType == 1)
+            {
+                methodTypeTxt = "constructor";
+            }
+            if (methodType == 2)
+            {
+                methodTypeTxt = "web service";
+            }
+            if (asText)
+            {
+                data = buildTypeLink(returnType, parentClass, false, true);
+                if (("VOID".equals(data.toUpperCase().trim())) || ("".equals(data.trim())))
+                {
+                    return String.format("This {0} does not return a value.", methodTypeTxt);
+                }
+                if (isVowel(data))
+                {
+                    return String.format("This {0} returns an {1}.", methodTypeTxt, data);
+                }
+                return String.format("This {0} returns a {1}.", methodTypeTxt, data);
+            }
+
+            data = buildTypeLink(returnType, parentClass, true, false);
+            storeTypeLink(data, buildUsedByLink(usedByName, usedByChunkType, usedByInstance), usedByName, usedByChunkType);
+            return data;
     }
 
     //**************************************************************************
@@ -1926,7 +2110,7 @@ public class Documenter {
     private String createUsageList(String className, String parentClass) {
         String sHtmlPreMethodList = "";
 
-        if (configModel.AlItemUsage.size() <= 0) {
+        if (alItemUsage.size() <= 0) {
             return sHtmlPreMethodList;
         }
 
@@ -1974,19 +2158,19 @@ public class Documenter {
             ArrayList<String> alProps = new ArrayList<String>();
 
             //Does this class extend another class?
-            if (extendsClass.trim() != "")
+            if (!"".equals(extendsClass.trim()))
             {
                 String sItemName = buildTypeLink(extendsClass, parentClass, false, false);
                 sResult = "This class/type extends " + sItemName + ".<BR/>";
                 storeTypeLink(sItemName, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
             }
 
-            //Build the list of properties for this class
+            // Build the list of properties for this class
             for (ItemData itemData : alItems)
             {
                 // If this thing is a property (or a variable) *and* it's parent is the class
                 // we're interested in...add it to our list of properties
-                if (((itemData.sChunkType == "Property") || (itemData.sChunkType == "Variables")) && (itemData.sParentClass == (parentClass + "." + className)))
+                if ((("Property".equals(itemData.sChunkType)) || ("Variables".equals(itemData.sChunkType))) && (itemData.sParentClass.equals(parentClass + "." + className)))
                 {
                     alProps.add(itemData.sName + "[" + itemData.sType + "]");
                 }
@@ -2036,7 +2220,9 @@ public class Documenter {
     // 
     //**************************************************************************
     private String createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
-            if (chunkType != "Interfaces") return "";
+            if (!"Interfaces".equals(chunkType)) {
+                return "";
+            }
             
             if (interfaceData.contains("{"))
             {
@@ -2106,6 +2292,8 @@ public class Documenter {
     private void createSnippetFiles(String outputName, List<String> paramItems, boolean snippetDescr, boolean snippetExample, boolean snippetInput, boolean snippetOutput, String snippetMarker) {
         String str = outputName.substring(0, outputName.lastIndexOf("\\"));
 
+//        String message = String.format("WARNING: %s %d", outputName, paramItems.size());
+//        debugOut(message);
         if (!str.endsWith("\\")) {
             str = str + "\\";
         }
@@ -2136,10 +2324,14 @@ public class Documenter {
                     break;
                 }
             }
-            if (value.equals("") == false) {
+            if (false == value.equals("")) {
                 text = value;
             }
 
+//            if(item.contains("prop"))
+//            {
+//                debugOut("DEBUG: prop found");
+//            }
             createSnippetFile(str + item + ".flsnp", text);
         }
     }
@@ -2150,6 +2342,8 @@ public class Documenter {
     // 
     //**************************************************************************
     private void createSnippetFile(String filename, String snippetMarker) {
+        createdSnippetFiles++;
+        
         try {
             File file = new File(filename);
 
@@ -2168,7 +2362,6 @@ public class Documenter {
             }
         } catch (IOException e) {
             debugOut(e.getMessage());
-            e.printStackTrace();
         }
     }
     
@@ -2348,4 +2541,10 @@ public class Documenter {
 
         return sResult;
     }
+    
+    private Boolean isVowel(String sData)
+        {
+            sData = sData.toUpperCase().trim();
+            return (sData.startsWith("A") || sData.startsWith("E")) || ((sData.startsWith("I") || sData.startsWith("O")) || sData.startsWith("U"));
+        }
 }
