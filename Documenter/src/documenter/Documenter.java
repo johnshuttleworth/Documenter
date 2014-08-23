@@ -37,6 +37,9 @@ public class Documenter {
 
     private Integer outputtedChunks = 0;
     private Integer processedChunks = 0;
+    private Integer outputChunkEnum = 0;
+    private Integer excludedFiles = 0;
+    private Integer createDocsEnums = 0;
     
     private static final String NewLine = "\n";
 
@@ -148,7 +151,11 @@ public class Documenter {
         }
         generateFiles();
         
-        String message = String.format("Chunks: Processed %s Outputted %s", processedChunks, outputtedChunks);
+        String message = String.format("AllItems: %s Chunks: Processed %s Outputted %s OutputChunkEnum %s ExcludedFiles: %d", alItems.size(), processedChunks, outputtedChunks, outputChunkEnum, excludedFiles);
+        debugOut(message);
+        System.out.printf(message + NewLine);
+        
+        message = String.format("CreateDocsEnums: %d", createDocsEnums);
         debugOut(message);
         System.out.printf(message + NewLine);
     }
@@ -243,7 +250,6 @@ public class Documenter {
     //**************************************************************************
     private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList){
         Integer totalFiles = 0;
-        int notScanned = 0;
         
         List<String> excludeList = configModel.AllExcludeFiles;
             for (FilenameVersionFf fileName : latestVersionFileList) {
@@ -260,8 +266,8 @@ public class Documenter {
                         totalFiles++;
                         scanFile(fileName.FullName);
                     } else {
-                        notScanned++;
-                        System.out.printf(fileName.FullName + " not scaned " + notScanned);
+                        excludedFiles++;
+                        System.out.printf(fileName.FullName + " not scaned " + excludedFiles);
                     }
                 }
             }
@@ -379,7 +385,7 @@ public class Documenter {
                     outputChunk(chunkType, chunk, "", filename);
 
                     if (false == chunkType.equals(ctComment)) {
-                        String message = String.format("%s %s we are not checking for not marked as with sharing", chunkType, filename);
+                        String message = String.format("WARNING: %s %s we are not checking for not marked as with sharing", chunkType, filename);
                         debugOut(message);
                     }
                 }
@@ -496,183 +502,178 @@ public class Documenter {
     
     //**************************************************************************
     // Method: CreateDocs
-    // Outline: When called, this routine reads in the specified template file
-    //			(if it exists) and then attempts to use that file's data to
-    //			create a file for each thing of the type specified (e.g. method,
-    //			type). To do this it uses the placeholders in the template file
-    //			to insert values from the thing into HTML text...and then saves
-    //			the resultant text to an output file
+    // When called, this routine reads in the specified template file
+    // (if it exists) and then attempts to use that file's data to
+    // create a file for each thing of the type specified (e.g. method,
+    // type). To do this it uses the placeholders in the template file
+    // to insert values from the thing into HTML text...and then saves
+    // the resultant text to an output file
     //**************************************************************************
     private void CreateDocs(String docPath, String rootPath, String docType, String docTemplate, List<String> tocList, Boolean createFiles) {
         String path = "";
         String sData = "";
-            ArrayList<String> alDocPlaceholders = new ArrayList<String>();
-            docTemplate = docTemplate.trim();
-            if (docTemplate != "")
-            {
+        ArrayList<String> alDocPlaceholders = new ArrayList<String>();
+        docTemplate = docTemplate.trim();
+        if (docTemplate != "") {
                 //System.out.printf("Creating output files: %s...", sType);
 
-        //Load the template data
-        BufferedReader inTemplate;
-        try {
-            inTemplate = new BufferedReader(new FileReader(docTemplate));
+            //Load the template data
+            BufferedReader inTemplate;
+            try {
+                inTemplate = new BufferedReader(new FileReader(docTemplate));
 
-            String line;
-            while ((line = inTemplate.readLine()) != null) {
-                sData = sData + line + "\n";
+                String line;
+                while ((line = inTemplate.readLine()) != null) {
+                    sData = sData + line + "\n";
+                }
+
+                inTemplate.close();
+            } catch (FileNotFoundException e) {
+                globalAbortText = "FileNotFound (Template): " + docTemplate + " Error: " + e.getMessage();
+                globalAbort = true;
+            } catch (IOException e) {
+                globalAbortText = "IOException (Template): " + docTemplate + " Error: " + e.getMessage();
+                globalAbort = true;
             }
 
-            inTemplate.close();
-        } catch (FileNotFoundException e) {
-            globalAbortText = "FileNotFound (Template): " + docTemplate + " Error: " + e.getMessage();
-            globalAbort = true;
-        } catch (IOException e) {
-            globalAbortText = "IOException (Template): " + docTemplate + " Error: " + e.getMessage();
-            globalAbort = true;
-        }
+            if (globalAbort) {
+                return;
+            }
+            sData = FormatPlaceholders(sData, alDocPlaceholders);
 
-        if (globalAbort) {
-            return;
-        }
-                sData = FormatPlaceholders(sData, alDocPlaceholders);
-                
-                if (!docPath.endsWith("\\"))
-                {
-                    docPath += "\\";
-                }
-                
-                if (!rootPath.endsWith("\\"))
-                {
-                    rootPath += "\\";
+            if (!docPath.endsWith("\\")) {
+                docPath += "\\";
+            }
+
+            if (!rootPath.endsWith("\\")) {
+                rootPath += "\\";
+            }
+
+            for (ItemData itemData : alItems) {
+                // These files are covered under web services so don't copy them to the types folder
+                if (itemData.sOutputFile.startsWith("CODA")) {
+                    //System.Diagnostics.Debug.WriteLine(objItem.sOutputFile);
+                    continue;
                 }
 
-                for (ItemData itemData : alItems)
-                {
-                    // THese files are covered under web services so don't copy them to the types folder
-                    if (itemData.sOutputFile.startsWith("CODA"))
-                    {
-                        //System.Diagnostics.Debug.WriteLine(objItem.sOutputFile);
-                        continue;
-                    }
+                // This is for debugging
+                if ((itemData.sChunkType == docType) && docType == ctEnum) {
+                    createDocsEnums++;
+                }
 
-                    if (((itemData.sChunkType == docType) && (((itemData.sParentClass.trim() != "") || !configModel.SkipRootClasses) || (itemData.sChunkType != "Classes/Types"))) && (((itemData.sChunkType != "Methods") || (itemData.MethodType != 1)) || !configModel.SkipConstructor))
-                    {
-                        //Are we creating files?
-                        if (createFiles)
-                        {
-                            path = docPath + itemData.sOutputFile;
-                                
-                             //Does the output file already exist?
-                    if ((new File(path)).isFile())
-                    {
-                        //Yes - Work out what to do. Are we overwriting?
-                        if (!configModel.bOverwriteDocs)
-                        {
-                            //No - Create a backup of the file
-                            String sBackupFile = DateToShortDateString(new Date()) + " " + DateToShortTimeString(new Date());
-                            sBackupFile = sBackupFile.replace("\\", "-").replace(":", "-").replace("/", "").trim();
+                if (((itemData.sChunkType == docType) && (((itemData.sParentClass.trim() != "") || !configModel.SkipRootClasses) || (itemData.sChunkType != "Classes/Types"))) &&
+                        (((itemData.sChunkType != "Methods") || (itemData.MethodType != 1)) || !configModel.SkipConstructor)) {
+                    
+                    //Are we creating files?
+                    if (createFiles) {
+                        path = docPath + itemData.sOutputFile;
 
-                            sBackupFile = path + itemData.sName + Integer.toString(itemData.iInstance) + "-" + sBackupFile + DefFileExt;
+                        //Does the output file already exist?
+                        if ((new File(path)).isFile()) {
+                            //Yes - Work out what to do. Are we overwriting?
+                            if (!configModel.bOverwriteDocs) {
+                                //No - Create a backup of the file
+                                String sBackupFile = DateToShortDateString(new Date()) + " " + DateToShortTimeString(new Date());
+                                sBackupFile = sBackupFile.replace("\\", "-").replace(":", "-").replace("/", "").trim();
 
-                            try {
-                                copyFile(path, sBackupFile);
-                            } catch (IOException e) {
-                                e.printStackTrace();
+                                sBackupFile = path + itemData.sName + Integer.toString(itemData.iInstance) + "-" + sBackupFile + DefFileExt;
+
+                                try {
+                                    copyFile(path, sBackupFile);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
                             }
-                        }
 
-                        (new java.io.File(path)).delete();
+                            (new java.io.File(path)).delete();
+                        }
                     }
-                        }
-                        String source = itemData.sOutputFile;
-                        if (source.contains("."))
-                        {
-                            source = source.substring(0, source.indexOf('.')).trim();
-                        }
-                        String sOutputMethodName = GenerateSnippetFilename(itemData);
+                    String source = itemData.sOutputFile;
+                    if (source.contains(".")) {
+                        source = source.substring(0, source.indexOf('.')).trim();
+                    }
+                    String sOutputMethodName = GenerateSnippetFilename(itemData);
 
                         //if (itemData.sName.ToUpper() == "HEADERDETAILS")
-                        //{
-                        //    sName = itemData.sName;
-                        //}
+                    //{
+                    //    sName = itemData.sName;
+                    //}
+                    String sName = sData;
+                    String sUsedByName = itemData.sName;
+                    if (itemData.sParentClass.trim() != "") {
+                        sUsedByName = itemData.sParentClass + "." + sUsedByName;
+                    }
+                    sUsedByName = configModel.Namespace + sUsedByName;
+                    configModel.SnippetsList.clear();
 
-                        String sName = sData;
-                        String sUsedByName = itemData.sName;
-                        if (itemData.sParentClass.trim() != "")
-                        {
-                            sUsedByName = itemData.sParentClass + "." + sUsedByName;
-                        }
-                        sUsedByName = configModel.Namespace + sUsedByName;
-                        configModel.SnippetsList.clear();
+                    sName = sName.replace("[%FULLNAME%]", sUsedByName);
+                    sName = sName.replace("[%NAME%]", itemData.sName);
+                    sName = sName.replace("[%ITEMTYPE%]", itemData.sChunkType);
+                    sName = sName.replace("[%FILENAME%]", itemData.sSourceFile);
+                    sName = sName.replace("[%INPUTPARAMS%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", false));
+                    sName = sName.replace("[%INPUTPARAMSCR%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, NewLine, configModel.ParamIndent, false));
+                    sName = sName.replace("[%INPUTPARAMSTABLE%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", true));
+                    sName = sName.replace("[%PARENT%]", itemData.sParentClass).replace("[%RETURNTYPE%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, false));
+                    sName = sName.replace("[%RETURNTYPETEXT%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, true));
+                    sName = sName.replace("[%VALUES%]", itemData.sValues).replace("[%VALUESTABLE%]", CreateValuesTable(sOutputMethodName, itemData.sValues));
+                    sName = sName.replace("[%USAGELIST%]", createUsageList(itemData.sName, itemData.sParentClass));
+                    sName = sName.replace("[%INTERFACELIST%]", createInterfaceList(itemData.sName, itemData.iInstance, itemData.sChunkType, itemData.sChunkData, itemData.sParentClass));
+                    sName = sName.replace("[%PROPERTYLIST%]", createPropertyList(sOutputMethodName, itemData.sName, itemData.sParentClass, itemData.sExtends, itemData.sChunkType, itemData.iInstance));
+                    sName = sName.replace("[%VISIBILITY%]", itemData.sVisibility);
+                    sName = sName.replace("[%RAWDATA%]", itemData.sChunkData);
+                    sName = sName.replace("[%PRODUCTNAMESPACE%]", configModel.Namespace);
+                    sName = sName.replace("[%OUTPUTNAME%]", source);
+                    sName = sName.replace("[%OUTPUTFILENAME%]", itemData.sOutputFile);
+                    sName = sName.replace("[%OUTPUTPATH%]", docPath);
+                    sName = sName.replace("[%DATE%]", DateToShortTimeString(new Date()));
+                    sName = sName.replace("[%TIME%]", DateToShortTimeString(new Date()));
 
-                        sName = sName.replace("[%FULLNAME%]", sUsedByName);
-                        sName = sName.replace("[%NAME%]", itemData.sName);
-                        sName = sName.replace("[%ITEMTYPE%]", itemData.sChunkType);
-                        sName = sName.replace("[%FILENAME%]", itemData.sSourceFile);
-                        sName = sName.replace("[%INPUTPARAMS%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", false));
-                        sName = sName.replace("[%INPUTPARAMSCR%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, NewLine, configModel.ParamIndent, false));
-                        sName = sName.replace("[%INPUTPARAMSTABLE%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", true));
-                        sName = sName.replace("[%PARENT%]", itemData.sParentClass).replace("[%RETURNTYPE%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, false));
-                        sName = sName.replace("[%RETURNTYPETEXT%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, true));
-                        sName = sName.replace("[%VALUES%]", itemData.sValues).replace("[%VALUESTABLE%]", CreateValuesTable(sOutputMethodName, itemData.sValues));
-                        sName = sName.replace("[%USAGELIST%]", createUsageList(itemData.sName, itemData.sParentClass));
-                        sName = sName.replace("[%INTERFACELIST%]", createInterfaceList(itemData.sName, itemData.iInstance, itemData.sChunkType, itemData.sChunkData, itemData.sParentClass));
-                        sName = sName.replace("[%PROPERTYLIST%]", createPropertyList(sOutputMethodName, itemData.sName, itemData.sParentClass, itemData.sExtends, itemData.sChunkType, itemData.iInstance));
-                        sName = sName.replace("[%VISIBILITY%]", itemData.sVisibility);
-                        sName = sName.replace("[%RAWDATA%]", itemData.sChunkData);
-                        sName = sName.replace("[%PRODUCTNAMESPACE%]", configModel.Namespace);
-                        sName = sName.replace("[%OUTPUTNAME%]", source);
-                        sName = sName.replace("[%OUTPUTFILENAME%]", itemData.sOutputFile);
-                        sName = sName.replace("[%OUTPUTPATH%]", docPath);
-                        sName = sName.replace("[%DATE%]", DateToShortTimeString(new Date()));
-                        sName = sName.replace("[%TIME%]", DateToShortTimeString(new Date()));
+                    String str10 = sName;
+                    sName = sName.replace("[%SNIPPETDESCR%]", sOutputMethodName + "-descr.flsnp");
+                    Boolean bSnippetDescr = (str10.equals(sName) == false);
+                    str10 = sName;
+                    sName = sName.replace("[%SNIPPETEXAMPLE%]", sOutputMethodName + "-example.flsnp");
+                    Boolean bSnippetExample = (str10.equals(sName) == false);
+                    str10 = sName;
+                    sName = sName.replace("[%SNIPPETINPUT%]", sOutputMethodName + "-input.flsnp");
+                    Boolean bSnippetInput = (str10.equals(sName) == false);
+                    str10 = sName;
+                    sName = sName.replace("[%SNIPPETOUTPUT%]", sOutputMethodName + "-output.flsnp");
+                    Boolean bSnippetOutput = (str10.equals(sName) == false);
 
-                        String str10 = sName;
-                        sName = sName.replace("[%SNIPPETDESCR%]", sOutputMethodName + "-descr.flsnp");
-                        Boolean bSnippetDescr = (str10.equals(sName) == false);
-                        str10 = sName;
-                        sName = sName.replace("[%SNIPPETEXAMPLE%]", sOutputMethodName + "-example.flsnp");
-                        Boolean bSnippetExample = (str10.equals(sName) == false);
-                        str10 = sName;
-                        sName = sName.replace("[%SNIPPETINPUT%]", sOutputMethodName + "-input.flsnp");
-                        Boolean bSnippetInput = (str10.equals(sName) == false);
-                        str10 = sName;
-                        sName = sName.replace("[%SNIPPETOUTPUT%]", sOutputMethodName + "-output.flsnp");
-                        Boolean bSnippetOutput = (str10.equals(sName) == false);
-                        
-                        for (String placeHolder : alDocPlaceholders)
-                        {
-                            String sPlaceholder = placeHolder;
-                            String newValue = getDocData(sPlaceholder, itemData.sName, itemData.sParentClass);
-                            sName = sName.replace(sPlaceholder, newValue);
-                        }
+                    for (String placeHolder : alDocPlaceholders) {
+                        String sPlaceholder = placeHolder;
+                        String newValue = getDocData(sPlaceholder, itemData.sName, itemData.sParentClass);
+                        sName = sName.replace(sPlaceholder, newValue);
+                    }
 
 //                        StatusMsg = "Generating:";
-                        if (createFiles)
-                        {
+                    if (createFiles) {
                             //Yes - Create the file (and create an entry in the TOC if we have to)
-                    //We have the data for this file...so save it
-                    BufferedWriter writer = null;
-                    try {
-                        writer = new BufferedWriter(new FileWriter(path));
-                        writer.write(sName);
-                        writer.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                            
-                            if (configModel.Toc != 0)
-                            {
-                                tocList.add(itemData.sChunkType + "[" + sUsedByName + "]" + path);
-                            }
-                            if (configModel.IncludeSnippets)
-                            {
-                                createSnippetFiles(String.format("%s%s\\%s", rootPath, SnippetsFolder , sOutputMethodName), configModel.SnippetsList, bSnippetDescr, bSnippetExample, bSnippetInput, bSnippetOutput, configModel.SnippetMarker);
-                            }
+                        //We have the data for this file...so save it
+                        BufferedWriter writer = null;
+                        try {
+                             // This is for debugging
+//                if ((itemData.sChunkType == docType) && docType == ctEnum) {
+//                    debugOut("Enum writing:  " + path);
+//                }
+                            writer = new BufferedWriter(new FileWriter(path));
+                            writer.write(sName);
+                            writer.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                        if (configModel.Toc != 0) {
+                            tocList.add(itemData.sChunkType + "[" + sUsedByName + "]" + path);
+                        }
+                        if (configModel.IncludeSnippets) {
+                            createSnippetFiles(String.format("%s%s\\%s", rootPath, SnippetsFolder, sOutputMethodName), configModel.SnippetsList, bSnippetDescr, bSnippetExample, bSnippetInput, bSnippetOutput, configModel.SnippetMarker);
                         }
                     }
                 }
             }
+        }
     }
     
     private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
@@ -711,7 +712,7 @@ public class Documenter {
 
         try {
             Date date = new Date();
-            SimpleDateFormat ft = new SimpleDateFormat("E dd.MM.yyyy 'at' hh:mm:ss a");
+            String dateTime = DateToShortDateTimeString(new Date());
 
             File file = new File(debugFileName);
             // creates the file
@@ -721,10 +722,13 @@ public class Documenter {
             }
 
             // Writes the content to the file
-            try ( // creates a FileWriter Object
+            try (
+                    // creates a FileWriter Object
                     FileWriter writer = new FileWriter(file, true)) {
+
+                String debugMessage = String.format("%s ********* %s%s%s *********", dateTime, NewLine, message, NewLine);
                 // Writes the content to the file
-                writer.write(ft.format(date) + "  " + message + NewLine);
+                writer.write(debugMessage);
                 writer.flush();
             }
         } catch (IOException e) {
@@ -756,6 +760,9 @@ public class Documenter {
         String result = "";
         boolean bHandled = false;
 
+        // This is for debugging
+        String savedData = data.argvalue;
+        
         //Assume that we have no idea what this chunk is (as we don't at this point)
         chunkType.argvalue = ctUnknown;
 
@@ -871,7 +878,8 @@ public class Documenter {
                         if ((iBrace != -1) && (iBracket == -1))
                         {
                             iChunkEnd = 2;
-                            chunkType.argvalue = ctProperty;
+                            //chunkType.argvalue = ctProperty;
+                            chunkType.argvalue = data.argvalue.startsWith("enum ") ? "Enumerations" : "Property";
                         } else {
                              //No brace, no bracket and no equals?
                             if ((iBrace == -1) && (iBracket == -1))
@@ -938,6 +946,12 @@ public class Documenter {
 
                         iIndent = textCount(result, "{");
                         iIndent -= textCount(result, "}");
+                        if ((data.argvalue == "") && (iIndent != 0))
+                                {
+                                    data.argvalue = data.argvalue.trim();
+//                                    str4 = str4.Trim();
+                                    break;
+                                }
                     } while (iIndent > 0);
                     break;
             }
@@ -946,6 +960,8 @@ public class Documenter {
             if ((chunkType.argvalue.equals(ctClass))
                     && (!result.contains(";") && (result.toLowerCase().contains(" enum ")))) {
                 chunkType.argvalue = ctEnum;
+                
+                //debugOut(savedData);
             }
         }
         return result;
@@ -959,7 +975,6 @@ public class Documenter {
     //**************************************************************************
     private void processChunk(String data, String parentClass, String filename) {
         processedChunks++;
-        String sChunkType = "";
         String nextChunk = "";
         String chunkType = "";
         String sCheck = "";
@@ -968,12 +983,12 @@ public class Documenter {
         while (data.trim() != "") {
             //Extract the next 'chunk' of data
             RefObject<String> tempRef_sData = new RefObject<String>(data);
-            RefObject<String> tempRef_sChunkType = new RefObject<String>(sChunkType);
+            RefObject<String> tempRef_sChunkType = new RefObject<String>(chunkType);
 
             //Get the next 'chunk'
             nextChunk = getNextChunk(tempRef_sData, tempRef_sChunkType);
             data = tempRef_sData.argvalue;
-            sChunkType = tempRef_sChunkType.argvalue;
+            chunkType = tempRef_sChunkType.argvalue;
 
             //Is the chunk empty?
             if (!nextChunk.equals("")) {
@@ -1072,6 +1087,7 @@ public class Documenter {
                             break;
 
                         case ctEnum:
+                            outputChunkEnum++;
                             newItem = decodeEnum(newItem);
                             break;
 
@@ -1112,20 +1128,51 @@ public class Documenter {
                             newItem.RemoteAction = true;
                             newItem = decodeMethod(newItem);
                             break;
+                            
+                        default:
+                            String message = String.format("ERROR: This item was not outputted *********** %s", sChunkType);
+                        debugOut(message);
+                            break;
                     }
                     
+                    Boolean debugPrint = false;
+                    if (newItem.sName.startsWith("enumCreditNoteStatus"))
+                    {
+                        //debugOut("DEBUG: " + newItem.sName);
+                        debugPrint = true;
+                    }
+                     
                     //Did we identify a name for this chunk?
-                    if (newItem.sName.trim() != "")
+                    if (!"".equals(newItem.sName.trim()))
                     {
                         for (ItemData data2 : alItems)
                         {
-                            if (((data2.sChunkType == newItem.sChunkType) && (data2.sName.toUpperCase().trim() == newItem.sName.toUpperCase().trim())) && (data2.iInstance >= newItem.iInstance))
+//                            if (data2.sName.startsWith("enumCreditNoteStatus"))
+//                            {
+//                                debugOut("DEBUG: " + data2.sName);
+//                            }
+//
+//                            if ("Enumerations".equals(newItem.sChunkType) && (data2.sChunkType == null ? ctEnum == null : data2.sChunkType.equals(ctEnum)))
+//                            {
+//                                if(data2.sName.toUpperCase().trim() == null ? newItem.sName.toUpperCase().trim() == null : data2.sName.toUpperCase().trim().equals(newItem.sName.toUpperCase().trim()))
+//                                {
+//                                    if (newItem.sName.startsWith("enumCreditNoteStatus"))
+//                                    {
+//                                        debugOut("DEBUG: " + data2.sName);
+//                                    }                                    
+//                                }
+//                            }
+                            if (((data2.sChunkType == null ? newItem.sChunkType == null : data2.sChunkType.equals(newItem.sChunkType)) && (data2.sName.toUpperCase().trim() == null ? newItem.sName.toUpperCase().trim() == null : data2.sName.toUpperCase().trim().equals(newItem.sName.toUpperCase().trim()))) && (data2.iInstance >= newItem.iInstance))
                             {
                                 newItem.iInstance = data2.iInstance + 1;
                             }
                         }
                         newItem.sOutputFile = newItem.sName + newItem.iInstance + ".htm";
                         alItems.add(newItem);
+                        if(debugPrint)
+                        {
+                            debugOut("DEBUG: allItems.add   " + newItem.sOutputFile + "    " + newItem.sChunkType);
+                        }
                     }
                 }
             }
@@ -1155,9 +1202,9 @@ public class Documenter {
     
     //**************************************************************************
     // Routine: DecodeEnum
-    // Outline: Given a set of object data containing an 
-    //			enumeration, this routine extracts the enumeration name and its
-    //			values
+    // Given a set of object data containing an 
+    // enumeration, this routine extracts the enumeration name and its values
+    // 
     //**************************************************************************
     private ItemData decodeEnum(ItemData newItem) {
         newItem.sName = extractItemName(newItem, "ENUM");
@@ -1677,6 +1724,15 @@ public class Documenter {
         return formatter.format(date);
     }
 
+    //**************************************************************************
+    // Methd: DateToShortDateTimeString
+    // Given a date, this routine formats it in dd/MM/yyyy HH:mm:ss format
+    //**************************************************************************
+    private String DateToShortDateTimeString(java.util.Date date) {
+        Format formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        return formatter.format(date);
+    }
+    
     //**************************************************************************
     // Class:   RefObject
     // Outline: Class used to simulate the ability to pass arguments by 
