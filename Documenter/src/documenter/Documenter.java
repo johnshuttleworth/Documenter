@@ -36,7 +36,6 @@ import java.util.regex.Pattern;
  */
 public class Documenter {
 
-    
     private Integer outputtedChunks = 0;
     private Integer processedChunks = 0;
     private Integer outputChunkEnum = 0;
@@ -44,7 +43,7 @@ public class Documenter {
     private Integer excludedFiles = 0;
     private Integer createDocsEnums = 0;
     private Integer createdSnippetFiles = 0;
-    
+
     private static final String NewLine = "\n";
 
     private static final String appName = "FinancialForce.com Documentation Generator";
@@ -71,28 +70,25 @@ public class Documenter {
     private static final String ctComment = "Comment";
     private static final String ctProperty = "Property";
     private static final String ctRemoteAction = "RemoteAction";
-    
+
     private final String IndexFolder = "Content";
     private final String TocFolder = "Projects\\Tocs";
-    
+
     private final String EnumsFolder = "Content\\Reference\\Enums";
     private final String ServicesFolder = "Content\\Reference\\Services";
     private final String TypesFolder = "Content\\Reference\\Types";
     private final String TestsFolder = "Content\\Reference\\Tests";
     private final String UnknownFolder = "Content\\Reference\\Unknown";
     private final String InterfacesFolder = "Content\\Reference\\Interfaces";
-    
+
     private final String SnippetsFolder = "Content\\Resources\\Snippets";
-    
-       
+
     private static final String DefFileExt = ".htm";
 
-    
-    //**************************************************************************
-    // Routine: Main
-    // @param args the command line arguments
-    //  
-    //**************************************************************************
+    /**
+     Routine: Main
+     @param args the command line arguments
+     */
     public static void main(String[] args) {
         Documenter ceEngine = new Documenter();
 
@@ -128,48 +124,44 @@ public class Documenter {
         //We're finished...so tell the user
         System.out.printf("Generation Completed: %s\n", new Date().toString());
     }
-    
-    //**************************************************************************
-     // Given an input path, this routine looks for .CLS files, scans them
-     // (adding the results to the alItems arraylist) and then generates the
-     // output documentation files
-     //**************************************************************************
+
+    /**
+     * Given an input path, this routine looks for .CLS files, scans them
+     * (adding the results to the alItems arraylist) and then generates the
+     * output documentation files
+     */
     public void generate() {
-        
+
         // Create the output structure
         createOutputStructure(configModel.OutputFolder);
-        
+
         List<FilenameVersionFf> latestVersionFileList = scanFiles();
-        if(latestVersionFileList.isEmpty()){
+        if (latestVersionFileList.isEmpty()) {
             globalAbort = true;
             globalAbortText = "Could not find any files to process";
-            debugOut( String.format("ABORTED: %s", globalAbortText));
+            debugOut(String.format("ABORTED: %s", globalAbortText));
             return;
         }
         processSelectedFiles(latestVersionFileList);
-        
-        if( (processedChunks == 254 || outputtedChunks == 3813) == false){
+
+        if ((processedChunks == 254 || outputtedChunks == 3813) == false) {
             globalAbort = true;
             globalAbortText = "Processed file count is wrong";
-            debugOut( String.format("ABORTED: %s", globalAbortText));
+            debugOut(String.format("ABORTED: %s", globalAbortText));
             return;
         }
         generateFiles();
-        
-        String message = String.format("AllItems: %s Chunks: Processed %s Outputted %s OutputChunkEnum %s ExcludedFiles: %d", alItems.size(), processedChunks, outputtedChunks, outputChunkEnum, excludedFiles);
-        debugOut(message);
-        System.out.printf(message + NewLine);
-        
-        message = String.format("CreateDocsEnums: %d CreatedSnippetFiles %d OutputChunkProperty %d", createDocsEnums, createdSnippetFiles, outputChunkProperty);
+
+        String message = String.format("AllItems: %s Chunks: Processed %s Outputted %s OutputChunkEnum %s ExcludedFiles: %d%s", alItems.size(), processedChunks, outputtedChunks, outputChunkEnum, excludedFiles, NewLine);
+        message += String.format("CreateDocsEnums: %d CreatedSnippetFiles %d OutputChunkProperty %d", createDocsEnums, createdSnippetFiles, outputChunkProperty);
         debugOut(message);
         System.out.printf(message + NewLine);
     }
 
-    //**************************************************************************
-    // Method: loadConfiguration
-    // 
-    //
-    //**************************************************************************
+    /**
+     *
+     * @param configurationFileName
+     */
     private void loadConfiguration(String configurationFileName) {
         configModel = ConfigurationSvc.LoadConfigFile(configurationFileName);
     }
@@ -179,11 +171,16 @@ public class Documenter {
     // Scan for the file that we are interested in and select the latest versions 
     //
     //**************************************************************************
+    
+    /**
+     * 
+     * @return 
+     */
     private List<FilenameVersionFf> scanFiles() {
         Integer totalFiles = 0;
 
         List<FilenameVersionFf> latestVersionFileList = new ArrayList<>();
-        
+
         alItems.clear();
 
         populateSnippetText();
@@ -200,8 +197,7 @@ public class Documenter {
         File[] listOfFiles = f.listFiles(textFilter);
 
         //Do we have any files?
-        if (listOfFiles == null)
-        {
+        if (listOfFiles == null) {
             String message = String.format("****** Invalid source path: %s *******", configModel.SourceFolder);
             debugOut(message);
             System.out.println(message);
@@ -220,12 +216,12 @@ public class Documenter {
                         int pos = filename.indexOf('.');
                         filenameSplitStrings[0] = filename.substring(0, pos);
                     }
-                    
+
                     FilenameVersionFf filenameVersionFf = new FilenameVersionFf();
                     filenameVersionFf.name = filenameSplitStrings[0];
                     filenameVersionFf.fullName = file.getPath();
                     filenameVersionFf.version = version;
-                    
+
                     int result = getIndexOf(latestVersionFileList, filenameVersionFf);
                     if (-1 == result) {
                         // Add
@@ -249,40 +245,38 @@ public class Documenter {
         return latestVersionFileList;
     }
 
-    //**************************************************************************
-    // Routine: processSelectedFiles
-    //
-    //**************************************************************************
-    private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList){
+    /**
+     * 
+     * @param latestVersionFileList 
+     */
+    private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList) {
         Integer totalFiles = 0;
-        
+
         List<String> excludeList = configModel.AllExcludeFiles;
-            for (FilenameVersionFf fileName : latestVersionFileList) {
-                String name = fileName.name;
-                if (name != null) {
-                    name = name.toLowerCase().trim();
+        for (FilenameVersionFf fileName : latestVersionFileList) {
+            String name = fileName.name;
+            if (name != null) {
+                name = name.toLowerCase().trim();
 
 //                    String testCatch = "CODAAPIGeneralLedgerAccountTypes";
 //                    if (name.toUpperCase().startsWith(testCatch.toUpperCase())) {
 //                        DebugOut(name);
 //                    }
-
-                    if (!excludeList.contains(name)) {
-                        totalFiles++;
-                        scanFile(fileName.fullName);
-                    } else {
-                        excludedFiles++;
-                        System.out.printf(fileName.fullName + " not scaned " + excludedFiles);
-                    }
+                if (!excludeList.contains(name)) {
+                    totalFiles++;
+                    scanFile(fileName.fullName);
+                } else {
+                    excludedFiles++;
+                    System.out.printf(fileName.fullName + " not scaned " + excludedFiles);
                 }
             }
+        }
     }
-    
-    //**************************************************************************
-    // Routine: scanFile
-    // Scan for the file that we are interested in and select the latest versions 
-    //
-    //**************************************************************************
+
+    /**
+     * Scan for the file that we are interested in and select the latest versions 
+     * @param filename 
+     */
     private void scanFile(String filename) {
         String fileData = "";
         boolean bAbort = false;
@@ -326,7 +320,7 @@ public class Documenter {
 
         String debugText = "";
         int repeatCount = 0;
-        
+
         //Loop until we run out of data (or get told to abort)...
         while (!fileData.trim().equals("") && !bAbort && !globalAbort) {
             //To stop ourselves form getting stuck in loops, we'll keep a track
@@ -404,65 +398,60 @@ public class Documenter {
             globalAbortText = debugText;
         }
     }
-    
-    //**************************************************************************
-    // Routine: CreateOutputStructure
-    // Outline: When called, this routine attempts to create the output folder
-    //			structure used to hold the generated  
-    //**************************************************************************
-    private void createOutputStructure(String sFolder) {
-        System.out.print("Creating output folders...");
 
-        sFolder = sFolder.trim();
+    /**
+     * This routine attempts to create the output folder structure used to hold the generated files
+     * @param outputFolder 
+     */
+    private void createOutputStructure(String outputFolder) {
+        
+        outputFolder = outputFolder.trim();
 
-        (new File(sFolder)).mkdir(); //Create the root output folder
+        //Create the root output folder
+        (new File(outputFolder)).mkdir(); 
 
-        if (!sFolder.endsWith("\\")) //Does our output folder end with a '\'?
+        //Does our output folder end with a '\'?
+        if (!outputFolder.endsWith("\\")) 
         {
-            sFolder += "\\"; //Nope - Add one on
+            //Nope - Add one on
+            outputFolder += "\\"; 
         }
+        
         //Create the individual item type output folders
-        (new File(sFolder + EnumsFolder)).mkdirs();
-        (new File(sFolder + InterfacesFolder)).mkdirs();
-        (new File(sFolder + ServicesFolder)).mkdirs();
-        (new File(sFolder + TestsFolder)).mkdirs();
-        (new File(sFolder + TypesFolder)).mkdirs();
-        (new File(sFolder + UnknownFolder)).mkdirs();
-        (new File(sFolder + TocFolder)).mkdirs();
-        (new File(sFolder + SnippetsFolder)).mkdirs();
+        (new File(outputFolder + EnumsFolder)).mkdirs();
+        (new File(outputFolder + InterfacesFolder)).mkdirs();
+        (new File(outputFolder + ServicesFolder)).mkdirs();
+        (new File(outputFolder + TestsFolder)).mkdirs();
+        (new File(outputFolder + TypesFolder)).mkdirs();
+        (new File(outputFolder + UnknownFolder)).mkdirs();
+        (new File(outputFolder + TocFolder)).mkdirs();
+        (new File(outputFolder + SnippetsFolder)).mkdirs();
         System.out.println("Done");
     }
-    
-    //**************************************************************************
-    // Method: generateFiles
-    // 
-    //
-    //**************************************************************************
+
+    /**
+     * 
+     */
     private void generateFiles() {
-        if (alItems.isEmpty())
-            {
-                debugOut("There is no class data to use in the generation process. Please check your input paramaters and scan classes again.");
-            }
-            else
-            {
-                configModel.AlHtml.add(configModel.HtmlPreEnumTable);
+        if (alItems.isEmpty()) {
+            debugOut("There is no class data to use in the generation process. Please check your input paramaters and scan classes again.");
+        } else {
+            configModel.AlHtml.add(configModel.HtmlPreEnumTable);
 //                configModel.HtmlPreEnumTable = FormatPlaceholders(configModel.AlHtml[0].toString(), null);
 
-                if ((!"".equals(configModel.Namespace.trim())) && !configModel.Namespace.endsWith("."))
-                {
-                    configModel.Namespace += ".";
-                }
-                                
-                generateOutputDocs(configModel.OutputFolder);
+            if ((!"".equals(configModel.Namespace.trim())) && !configModel.Namespace.endsWith(".")) {
+                configModel.Namespace += ".";
             }
+
+            generateOutputDocs(configModel.OutputFolder);
+        }
     }
 
-    //**************************************************************************
-    // Method: generateOutputDocs
-    // Given an output folder, this routine checks which type(s) of items we want
-    // to create documents for...and then creates them
-    //
-    //**************************************************************************
+    /**
+     * Given an output folder, this routine checks which type(s) of items we want
+     * to create documents for and then creates them
+     * @param outputFolder 
+     */
     private void generateOutputDocs(String outputFolder) {
         ArrayList<String> tocList = new ArrayList<String>();
 
@@ -504,16 +493,22 @@ public class Documenter {
             GenerateFlareToc(tocList, String.format("%s%s", outputFolder, TocFolder));
         }
     }
-    
-    //**************************************************************************
-    // Method: CreateDocs
-    // When called, this routine reads in the specified template file
-    // (if it exists) and then attempts to use that file's data to
-    // create a file for each thing of the type specified (e.g. method,
-    // type). To do this it uses the placeholders in the template file
-    // to insert values from the thing into HTML text...and then saves
-    // the resultant text to an output file
-    //**************************************************************************
+
+    /**
+     * 
+     * When called, this routine reads in the specified template file
+     * (if it exists) and then attempts to use that file's data to
+     * create a file for each thing of the type specified (e.g. method,
+     * type). To do this it uses the placeholder in the template file
+     * to insert values from the thing into HTML text...and then saves
+     * the resultant text to an output file
+     * @param docPath
+     * @param rootPath
+     * @param docType
+     * @param docTemplate
+     * @param tocList
+     * @param createFiles 
+     */
     private void CreateDocs(String docPath, String rootPath, String docType, String docTemplate, List<String> tocList, Boolean createFiles) {
         String path = "";
         String sData = "";
@@ -566,10 +561,10 @@ public class Documenter {
                     createDocsEnums++;
                 }
 
-                if (((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) &&
-                        (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ctClass)))) &&
-                        (((!itemData.chunkType.equals(ctMethod)) || (itemData.methodType != 1)) || !configModel.SkipConstructor)) {
-                    
+                if (((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType))
+                        && (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ctClass))))
+                        && (((!itemData.chunkType.equals(ctMethod)) || (itemData.methodType != 1)) || !configModel.SkipConstructor)) {
+
                     //Are we creating files?
                     if (createFiles) {
                         path = docPath + itemData.outputFile;
@@ -599,7 +594,7 @@ public class Documenter {
                     }
                     String sOutputMethodName = GenerateSnippetFilename(itemData);
 
-                        //if (itemData.sName.ToUpper() == "HEADERDETAILS")
+                    //if (itemData.sName.ToUpper() == "HEADERDETAILS")
                     //{
                     //    sName = itemData.sName;
                     //}
@@ -676,7 +671,11 @@ public class Documenter {
             }
         }
     }
-    
+
+    /**
+     * 
+     * @param latestVersionFileList 
+     */
     private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
         String filesProcessedFileName = configModel.OutputFolder + "\\FilesProcessed.txt";
 
@@ -695,6 +694,9 @@ public class Documenter {
         }
     }
 
+    /**
+     * 
+     */
     private void populateSnippetText() {
         // Add some elements to the dictionary. 
         snippetText.put("prop-Id", "JOHN_101");
@@ -707,6 +709,10 @@ public class Documenter {
         snippetText.put("prop-OwnerId", "JOHN_OwnerId");
     }
 
+    /**
+     * 
+     * @param message 
+     */
     private void debugOut(String message) {
         String debugFileName = configModel.OutputFolder + "\\Debug.txt";
 
@@ -726,7 +732,7 @@ public class Documenter {
                     // creates a FileWriter Object
                     FileWriter writer = new FileWriter(file, true)) {
 
-                String debugMessage = String.format("%s ********* %s%s%s *********", dateTime, NewLine, message, NewLine);
+                String debugMessage = String.format("%s ********* %s%s%s", dateTime, NewLine, message, NewLine);
                 // Writes the content to the file
                 writer.write(debugMessage);
                 writer.flush();
@@ -735,6 +741,12 @@ public class Documenter {
         }
     }
 
+    /**
+     * 
+     * @param latestVersionFileList
+     * @param filenameVersionFf
+     * @return 
+     */
     private int getIndexOf(List<FilenameVersionFf> latestVersionFileList, FilenameVersionFf filenameVersionFf) {
         if (latestVersionFileList == null) {
             return -1;
@@ -749,25 +761,26 @@ public class Documenter {
         return index;
     }
 
-    //**************************************************************************
-    // Method: getNextChunk
-    // Given a set of data, this routine works out the next 'chunk' 
-    // (i.e. 'section', structure etc.), decides what 'type' it is
-    // (e.g. structure, method) and returns it 
-    //**************************************************************************
+    /**
+     * Given a set of data, this routine works out the next 'chunk' 
+     * is i.e. section, structure etc, and returns it 
+     * 
+     * @param data
+     * @param chunkType
+     * @return 
+     */
     private String getNextChunk(RefObject<String> data, RefObject<String> chunkType) {
         String result = "";
         boolean bHandled = false;
 
         // This is for debugging
         String savedData = data.argvalue;
-        
+
         //Assume that we have no idea what this chunk is (as we don't at this point)
         chunkType.argvalue = ctUnknown;
 
         //Does the data start with a '//' (i.e. is this a comment)?
-        if (data.argvalue.startsWith("//"))
-        {
+        if (data.argvalue.startsWith("//")) {
             //Yes - Extract the comment, set the return type...and get out
             if (data.argvalue.indexOf("\n") >= 0) {
                 result = extractText(data, data.argvalue.indexOf("\n"));
@@ -781,8 +794,7 @@ public class Documenter {
         }
 
         //Does the data start with '/*' (i.e. is this a comment)?
-        if (data.argvalue.startsWith("/*"))
-        {
+        if (data.argvalue.startsWith("/*")) {
             //Yes - Extract the comment, set the return type...and get out
             result = extractText(data, data.argvalue.indexOf("*/") + 1);
             chunkType.argvalue = ctComment;
@@ -791,9 +803,8 @@ public class Documenter {
 
         String start;
         //Does this data have a space in it?
-        if (data.argvalue.indexOf(" ") >= 0)
-        {
-             	//Yes - Extract the first 'word'
+        if (data.argvalue.indexOf(" ") >= 0) {
+            //Yes - Extract the first 'word'
             start = extractText(data, data.argvalue.indexOf(" "));
         } else {
             //No - Use everything as the first 'word'
@@ -804,7 +815,7 @@ public class Documenter {
         //Work out what the first 'word' (sStart) contains...and then respond accordingly
         String check = start.toUpperCase().trim();
         int iChunkEnd = -1;
-        
+
         //Check for 'Global', 'Private', 'Public' and '@IsTest' - these should be the only valid ways to start something in Apex
         if ((check.equals("GLOBAL") || check.equals("WEBSERVICE") || check.equals("PUBLIC") || check.equals("PRIVATE") || check.equals("@ISTEST") || check.equals("@REMOTEACTION")) && !bHandled) {
             result = start + " ";
@@ -824,8 +835,7 @@ public class Documenter {
             }
 
             //Do we have a semi-colon?
-            if (iSemiColon != -1)
-            {
+            if (iSemiColon != -1) {
                 //Yes - Check to see if it falls *before* the other things that we scanned for
                 if (iEquals > iSemiColon) {
                     iEquals = -1;
@@ -842,14 +852,12 @@ public class Documenter {
             {
                 //Yes - Read to the next semi-colon
                 //Is the equals *after* a brace bracket?
-                if ((iBrace < iEquals) && (iBrace != -1))
-                {
+                if ((iBrace < iEquals) && (iBrace != -1)) {
                     iChunkEnd = 2;
                     //Yes - Class or routine
 
-                     //Regular bracket before brace bracket?
-                    if ((iBracket < iBrace) && (iBracket != -1))
-                    {
+                    //Regular bracket before brace bracket?
+                    if ((iBracket < iBrace) && (iBracket != -1)) {
                         chunkType.argvalue = ctMethod;
                     } else {
                         chunkType.argvalue = ctClass;
@@ -860,29 +868,25 @@ public class Documenter {
                     chunkType.argvalue = ctVar;
                 }
             } else {
-                 //Brace bracket before regular bracket?
-                if ((iBrace < iBracket) && (iBrace != -1))
-                {
+                //Brace bracket before regular bracket?
+                if ((iBrace < iBracket) && (iBrace != -1)) {
                     //Yes - Enumeration
                     iChunkEnd = 1;
                     chunkType.argvalue = ctEnum;
                 } else {
                     //Regular bracket before brace bracket?
-                    if ((iBracket < iBrace) && (iBracket != -1)) 
-                    {
+                    if ((iBracket < iBrace) && (iBracket != -1)) {
                         iChunkEnd = 2;
                         chunkType.argvalue = ctMethod;
                     } else {
                         //Brace and *no* regular bracket?
-                        if ((iBrace != -1) && (iBracket == -1))
-                        {
+                        if ((iBrace != -1) && (iBracket == -1)) {
                             iChunkEnd = 2;
                             //chunkType.argvalue = ctProperty;
                             chunkType.argvalue = data.argvalue.startsWith("enum ") ? "Enumerations" : "Property";
                         } else {
-                             //No brace, no bracket and no equals?
-                            if ((iBrace == -1) && (iBracket == -1))
-                            {
+                            //No brace, no bracket and no equals?
+                            if ((iBrace == -1) && (iBracket == -1)) {
                                 iChunkEnd = 0;
                                 chunkType.argvalue = ctVar;
                             }
@@ -894,36 +898,31 @@ public class Documenter {
             //Have we found a nested class?
             if ((iBrace > 0)
                     && (data.argvalue.toLowerCase().indexOf("class") < iBrace)
-                    && (data.argvalue.toLowerCase().indexOf("class") >= 0))
-            {
+                    && (data.argvalue.toLowerCase().indexOf("class") >= 0)) {
                 //Yes - Read to the end of it
                 iChunkEnd = 2;
                 chunkType.argvalue = ctClass + "3";
             }
 
-            if (check.equals("@REMOTEACTION"))
-                {
-                    chunkType.argvalue = ctRemoteAction;
-                    result = "";
-                }
-            
+            if (check.equals("@REMOTEACTION")) {
+                chunkType.argvalue = ctRemoteAction;
+                result = "";
+            }
+
             //If this method is actually a test...
-            if ((chunkType.argvalue.equals(ctMethod)) && (check.equals("@ISTEST")))
-            {
+            if ((chunkType.argvalue.equals(ctMethod)) && (check.equals("@ISTEST"))) {
                 //...mark it as such
                 chunkType.argvalue = ctTest;
             }
-            
-            if ((chunkType.argvalue.equals(ctMethod)) && (check.equals("WEBSERVICE")))
-                {
-                    chunkType.argvalue = ctWebServices;
-                }
-                
-            if (data.argvalue.toUpperCase().trim().startsWith("INTERFACE"))
-            {
+
+            if ((chunkType.argvalue.equals(ctMethod)) && (check.equals("WEBSERVICE"))) {
+                chunkType.argvalue = ctWebServices;
+            }
+
+            if (data.argvalue.toUpperCase().trim().startsWith("INTERFACE")) {
                 chunkType.argvalue = ctInterfaces;
             }
-            
+
             switch (iChunkEnd) {
                 case 0: //Scan for next semi-colon
                     result += extractText(data, iSemiColon);
@@ -945,12 +944,11 @@ public class Documenter {
 
                         iIndent = textCount(result, "{");
                         iIndent -= textCount(result, "}");
-                        if (("".equals(data.argvalue)) && (iIndent != 0))
-                                {
-                                    data.argvalue = data.argvalue.trim();
+                        if (("".equals(data.argvalue)) && (iIndent != 0)) {
+                            data.argvalue = data.argvalue.trim();
 //                                    str4 = str4.Trim();
-                                    break;
-                                }
+                            break;
+                        }
                     } while (iIndent > 0);
                     break;
             }
@@ -959,19 +957,19 @@ public class Documenter {
             if ((chunkType.argvalue.equals(ctClass))
                     && (!result.contains(";") && (result.toLowerCase().contains(" enum ")))) {
                 chunkType.argvalue = ctEnum;
-                
+
                 //debugOut(savedData);
             }
         }
         return result;
     }
 
-    //******************* FROM DOCUMENTERWIZ ***********************************
-    // Method: processChunk
-    // Given a set of data, this routine works out the next 'chunk' 
-    // (i.e. 'section', structure etc.), decides what 'type' it is
-    // (e.g. structure, method) and returns it 
-    //**************************************************************************
+    /**
+     * This routine works out the next chunk and decides what type it is
+     * @param data
+     * @param parentClass
+     * @param filename 
+     */
     private void processChunk(String data, String parentClass, String filename) {
         processedChunks++;
         String nextChunk = "";
@@ -1035,123 +1033,114 @@ public class Documenter {
         }
     }
 
-    //**************************************************************************
-    // Method: outputChunk
-    // 
-    // 
-    // 
-    //**************************************************************************
-    private void outputChunk(String sChunkType, String sChunk, String sParentClass, String sFilename) {
+    /**
+     * 
+     * @param chunkType
+     * @param chunk
+     * @param parentClass
+     * @param filename 
+     */
+    private void outputChunk(String chunkType, String chunk, String parentClass, String filename) {
         outputtedChunks++;
-        
-        if (!"".equals(sChunk.trim()))
-            {
-                String str;
-                
-                if (((sChunkType.equals("Comment")) || (sChunkType.equals("Unknown"))) || (sChunkType.equals("Tests")))
-                {
-                    str = "N/A";
-                }
-                else
-                {
-                    if (sChunk.toUpperCase().startsWith("STATIC "))
-                    {
-                        sChunk = sChunk.substring(7).trim();
-                    }
-                                        
-                    if (sChunk.trim().contains(" ")) {
-                        str = sChunk.substring(0, sChunk.indexOf(" ")).toUpperCase();
-                    } else {
-                        str = sChunk.toUpperCase().trim();
-                    }
+
+        if (!"".equals(chunk.trim())) {
+            String str;
+
+            if (((chunkType.equals("Comment")) || (chunkType.equals("Unknown"))) || (chunkType.equals("Tests"))) {
+                str = "N/A";
+            } else {
+                if (chunk.toUpperCase().startsWith("STATIC ")) {
+                    chunk = chunk.substring(7).trim();
                 }
 
-                if ((((str.equals("PUBLIC")) && configModel.ShowPublic) || ((str.equals("PRIVATE")) && configModel.ShowPrivate)) 
-                    || ((((str.equals("GLOBAL")) && configModel.ShowGlobal) || ((str.equals("WEBSERVICE")) && configModel.ShowWebService)) || (str.equals("N/A"))))
-                {
-                    ItemData newItem = new ItemData();
-                    newItem.name = "";
-                    newItem.parentClass = sParentClass;
-                    newItem.chunkType = sChunkType;
-                    newItem.chunkData = sChunk;
-                    newItem.visibility = str;
-                    newItem.sourceFile = sFilename;
-                    newItem.instance = 1;
+                if (chunk.trim().contains(" ")) {
+                    str = chunk.substring(0, chunk.indexOf(" ")).toUpperCase();
+                } else {
+                    str = chunk.toUpperCase().trim();
+                }
+            }
 
-                    switch (sChunkType)
-                    {
-                        case ctClass:
-                            newItem = decodeClass(newItem);
-                            break;
+            if ((((str.equals("PUBLIC")) && configModel.ShowPublic) || ((str.equals("PRIVATE")) && configModel.ShowPrivate))
+                    || ((((str.equals("GLOBAL")) && configModel.ShowGlobal) || ((str.equals("WEBSERVICE")) && configModel.ShowWebService)) || (str.equals("N/A")))) {
+                ItemData newItem = new ItemData();
+                newItem.name = "";
+                newItem.parentClass = parentClass;
+                newItem.chunkType = chunkType;
+                newItem.chunkData = chunk;
+                newItem.visibility = str;
+                newItem.sourceFile = filename;
+                newItem.instance = 1;
 
-                        case ctEnum:
-                            outputChunkEnum++;
-                            newItem = decodeEnum(newItem);
-                            break;
+                switch (chunkType) {
+                    case ctClass:
+                        newItem = decodeClass(newItem);
+                        break;
 
-                        case ctVar:
-                            newItem = decodeVar(newItem);
-                            break;
+                    case ctEnum:
+                        outputChunkEnum++;
+                        newItem = decodeEnum(newItem);
+                        break;
 
-                        case ctMethod:
-                            newItem = decodeMethod(newItem);
-                            break;
+                    case ctVar:
+                        newItem = decodeVar(newItem);
+                        break;
 
-                        case ctWebServices:
-                            newItem = decodeMethod(newItem);
-                            break;
+                    case ctMethod:
+                        newItem = decodeMethod(newItem);
+                        break;
 
-                        case ctUnknown:
-                            newItem = decodeUnknown(newItem);
-                            break;
+                    case ctWebServices:
+                        newItem = decodeMethod(newItem);
+                        break;
 
-                        case ctComment:
-                            newItem = decodeComment(newItem);
-                            break;
+                    case ctUnknown:
+                        newItem = decodeUnknown(newItem);
+                        break;
 
-                        case ctProperty:
-                            outputChunkProperty++;
-                            newItem = decodeProperty(newItem);
-                            break;
+                    case ctComment:
+                        newItem = decodeComment(newItem);
+                        break;
 
-                        case ctTest:
-                            newItem = decodeTest(newItem);
-                            break;
+                    case ctProperty:
+                        outputChunkProperty++;
+                        newItem = decodeProperty(newItem);
+                        break;
 
-                        case ctInterfaces:
-                            newItem = decodeInterface(newItem);
-                            break;
+                    case ctTest:
+                        newItem = decodeTest(newItem);
+                        break;
 
-                        case ctRemoteAction:
-                            newItem.chunkType = "Methods";
-                            newItem.remoteAction = true;
-                            newItem = decodeMethod(newItem);
-                            break;
-                            
-                        default:
-                            String message = String.format("ERROR: This item was not outputted *********** %s", sChunkType);
+                    case ctInterfaces:
+                        newItem = decodeInterface(newItem);
+                        break;
+
+                    case ctRemoteAction:
+                        newItem.chunkType = "Methods";
+                        newItem.remoteAction = true;
+                        newItem = decodeMethod(newItem);
+                        break;
+
+                    default:
+                        String message = String.format("ERROR: This item was not outputted *********** %s", chunkType);
                         debugOut(message);
-                            break;
-                    }
-                    
-                    Boolean debugPrint = false;
-                    if (newItem.name.startsWith("enumCreditNoteStatus"))
-                    {
-                        //debugOut("DEBUG: " + newItem.sName);
-                        debugPrint = true;
-                    }
-                     
-                    //Did we identify a name for this chunk?
-                    if (!"".equals(newItem.name.trim()))
-                    {
-                        for (ItemData data2 : alItems)
-                        {
+                        break;
+                }
+
+                Boolean debugPrint = false;
+                if (newItem.name.startsWith("enumCreditNoteStatus")) {
+                    //debugOut("DEBUG: " + newItem.sName);
+                    debugPrint = true;
+                }
+
+                //Did we identify a name for this chunk?
+                if (!"".equals(newItem.name.trim())) {
+                    for (ItemData data2 : alItems) {
 //                            if (data2.sName.startsWith("enumCreditNoteStatus"))
 //                            {
 //                                debugOut("DEBUG: " + data2.sName);
 //                            }
 //
-//                            if ("Enumerations".equals(newItem.sChunkType) && (data2.sChunkType == null ? ctEnum == null : data2.sChunkType.equals(ctEnum)))
+//                            if ("Enumerations".equals(newItem.chunkType) && (data2.chunkType == null ? ctEnum == null : data2.chunkType.equals(ctEnum)))
 //                            {
 //                                if(data2.sName.toUpperCase().trim() == null ? newItem.sName.toUpperCase().trim() == null : data2.sName.toUpperCase().trim().equals(newItem.sName.toUpperCase().trim()))
 //                                {
@@ -1161,28 +1150,27 @@ public class Documenter {
 //                                    }                                    
 //                                }
 //                            }
-                            if (((data2.chunkType == null ? newItem.chunkType == null : data2.chunkType.equals(newItem.chunkType)) && (data2.name.toUpperCase().trim() == null ? newItem.name.toUpperCase().trim() == null : data2.name.toUpperCase().trim().equals(newItem.name.toUpperCase().trim()))) && (data2.instance >= newItem.instance))
-                            {
-                                newItem.instance = data2.instance + 1;
-                            }
+                        if (((data2.chunkType == null ? newItem.chunkType == null : data2.chunkType.equals(newItem.chunkType)) && (data2.name.toUpperCase().trim() == null ? newItem.name.toUpperCase().trim() == null : data2.name.toUpperCase().trim().equals(newItem.name.toUpperCase().trim()))) && (data2.instance >= newItem.instance)) {
+                            newItem.instance = data2.instance + 1;
                         }
-                        newItem.outputFile = newItem.name + newItem.instance + ".htm";
-                        alItems.add(newItem);
+                    }
+                    newItem.outputFile = newItem.name + newItem.instance + ".htm";
+                    alItems.add(newItem);
 //                        if(debugPrint)
 //                        {
-//                            debugOut("DEBUG: allItems.add   " + newItem.sOutputFile + "    " + newItem.sChunkType);
+//                            debugOut("DEBUG: allItems.add   " + newItem.sOutputFile + "    " + newItem.chunkType);
 //                        }
-                    }
                 }
             }
+        }
     }
-    
-    //**************************************************************************
-    // Method: DecodeClass
-    // Given a set of object data containing a class, this 
-    // routine extracts the class name and whether it extends another class
-    // 
-    //**************************************************************************
+
+    /**
+     * Given a set of object data containing a class, this routine extracts 
+     * the class name and whether it extends another class
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeClass(ItemData newItem) {
         newItem.name = extractItemName(newItem, "CLASS");
 
@@ -1199,13 +1187,13 @@ public class Documenter {
 
         return newItem;
     }
-    
-    //**************************************************************************
-    // Routine: DecodeEnum
-    // Given a set of object data containing an 
-    // enumeration, this routine extracts the enumeration name and its values
-    // 
-    //**************************************************************************
+
+    /**
+     * Given a set of object data containing an enumeration, this routine 
+     * extracts the enumeration name and its values
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeEnum(ItemData newItem) {
         newItem.name = extractItemName(newItem, "ENUM");
 
@@ -1236,12 +1224,13 @@ public class Documenter {
         newItem.values = str;
         return newItem;
     }
-    
-    //**************************************************************************
-    // Method: DecodeVar
-    // Given a set of object data containing a variable
-    // definition, this routine extract the variable's name and type
-    //**************************************************************************
+
+    /**
+     * Given a set of object data containing a variable definition, 
+     * this routine extract the variable's name and type
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeVar(ItemData newItem) {
         String sData = newItem.chunkData;
 
@@ -1250,15 +1239,13 @@ public class Documenter {
             //Yes - The variable has a default value...so get everything up to the '='
             sData = sData.substring(0, sData.indexOf("=") + 1).trim();
             sData = sData.replace("=", "").trim();
-        } else
-        {
+        } else {
             //No - The variable is *just* the variable...so get everything up to the semi-colon
             sData = sData.replace(";", "").trim();
         }
 
-         //Does the remaining data have a space in it?
-        if (sData.contains(" "))
-        {
+        //Does the remaining data have a space in it?
+        if (sData.contains(" ")) {
             //Yes - It's well formed then (type *and* name)...so use it
             newItem.name = sData.substring(sData.lastIndexOf(" ")).trim();
             sData = sData.substring(0, sData.lastIndexOf(" ")).trim();
@@ -1268,60 +1255,58 @@ public class Documenter {
 
         return newItem;
     }
-    
-    //**************************************************************************
-    // Routine: DecodeMethod
-    // Outline: Given a set of object data containing a method
-    //			definition, this routine extracts the method name, return type,
-    //			parameter list and whether it's a constructor or not
-    //**************************************************************************
-    private ItemData decodeMethod(ItemData newItem)
-        {
-            String sChunkData = newItem.chunkData;
-            sChunkData = sChunkData.substring(0, sChunkData.indexOf("(")).trim();
-            newItem.name = sChunkData.substring(sChunkData.lastIndexOf(" ")).trim();
-            sChunkData = sChunkData.substring(0, sChunkData.lastIndexOf(" ")).trim();
-            newItem.type = extractReturnType(sChunkData);
-            if ("[CONSTRUCTOR]".equals(newItem.type))
-            {
-                newItem.type = "";
-                newItem.methodType = 1;
-            }
-            if ("WEBSERVICE".equals(newItem.visibility.toUpperCase().trim()))
-            {
-                newItem.methodType = 2;
-            }
-            sChunkData = newItem.chunkData;
-            sChunkData = sChunkData.substring(sChunkData.indexOf("(") + 1).trim();
-            sChunkData = sChunkData.substring(0, sChunkData.indexOf(")")).trim();
-            newItem.params = sChunkData;
-            return newItem;
+
+    /**
+     * Given a set of object data containing a method definition, this routine
+     * extracts the method name, return type, parameter list and whether 
+     * it's a constructor or not
+     * @param newItem
+     * @return 
+     */
+    private ItemData decodeMethod(ItemData newItem) {
+        String sChunkData = newItem.chunkData;
+        sChunkData = sChunkData.substring(0, sChunkData.indexOf("(")).trim();
+        newItem.name = sChunkData.substring(sChunkData.lastIndexOf(" ")).trim();
+        sChunkData = sChunkData.substring(0, sChunkData.lastIndexOf(" ")).trim();
+        newItem.type = extractReturnType(sChunkData);
+        if ("[CONSTRUCTOR]".equals(newItem.type)) {
+            newItem.type = "";
+            newItem.methodType = 1;
         }
-    
-    //**************************************************************************
-    // Routine: DecodeUnknown
-    // Outline: Given a set of object data containing an 'unknown', this routine
-    //			does, err, nothing
-    //**************************************************************************
+        if ("WEBSERVICE".equals(newItem.visibility.toUpperCase().trim())) {
+            newItem.methodType = 2;
+        }
+        sChunkData = newItem.chunkData;
+        sChunkData = sChunkData.substring(sChunkData.indexOf("(") + 1).trim();
+        sChunkData = sChunkData.substring(0, sChunkData.indexOf(")")).trim();
+        newItem.params = sChunkData;
+        return newItem;
+    }
+
+    /**
+     * Given a set of object data containing an unknown, this routine does nothing.
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeUnknown(ItemData newItem) {
         return newItem;
     }
-    
-    //**************************************************************************
-    // Method: DecodeComment
-    // Given a set of object data containing a set of
-    // comment data, this routine re-formats the comment into a single 
-    // line (if it spanned multiple lines) and extracts any 'DOC' data
-    //**************************************************************************    
+
+    /**
+     * Given a set of object data containing a set of comment data, this routine 
+     * re-formats the comment into a single line (if it spanned multiple lines) 
+     * and extracts any 'DOC' data
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeComment(ItemData newItem) {
         int length = 0;
-        
+
         //Replace any tabs with single spaces
         String str = newItem.chunkData.replace("\t", " ").trim();
 
         //If this is a single line comment...remove the leading '//'                
-        if (str.startsWith("//"))
-        {
+        if (str.startsWith("//")) {
             str = str.substring(2);
         } else {
             //...otherwise remove the multi-line characters
@@ -1335,7 +1320,7 @@ public class Documenter {
             length = str.length();
             str = str.replace("  ", " ");
         }
-        
+
         //Work out if the comment contains any documentation flags...and extract them if it does
         if (str.toUpperCase().contains("@DOC ")) {
             str = str.substring(str.toUpperCase().indexOf("@DOC ") + ("@".length() + 4)).trim();
@@ -1348,11 +1333,12 @@ public class Documenter {
         return newItem;
     }
 
-    //**************************************************************************
-    // Routine: DecodeProperty
-    // Outline: Given a set of object data containing a property 
-    // definition, this routine extracts the property name and type
-    //**************************************************************************
+    /**
+     * Given a set of object data containing a property definition, this routine 
+     * extracts the property name and type
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeProperty(ItemData newItem) {
         String sData = newItem.chunkData;
 
@@ -1367,23 +1353,24 @@ public class Documenter {
         return newItem;
     }
 
-    //**************************************************************************
-    // Method: DecodeTest
-    // Given a set of object data containing a test method, 
-    // this routine extracts everything that it can about the test (by 
-    // treating it as a regular method) 
-    //**************************************************************************
+    /**
+     * Given a set of object data containing a test method, this routine extracts 
+     * everything that it can about the test (by treating it as a regular method) 
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeTest(ItemData newItem) {
         newItem = decodeMethod(newItem);
 
         return newItem;
     }
 
-    //**************************************************************************
-    // Method: DecodeInterface
-    // Given a set of object data containing an interface 
-    // definition, this routine extracts the interface name and type
-    //**************************************************************************
+    /**
+     * Given a set of object data containing an interface definition, this routine 
+     * extracts the interface name and type
+     * @param newItem
+     * @return 
+     */
     private ItemData decodeInterface(ItemData newItem) {
         String sChunkData = newItem.chunkData;
         sChunkData = sChunkData.substring(sChunkData.toUpperCase().indexOf("INTERFACE ")).trim();
@@ -1394,13 +1381,13 @@ public class Documenter {
         newItem.name = sChunkData;
         return newItem;
     }
-    
-    //**************************************************************************
-    // Method preProcessComments
-    // 
-    // 
-    // 
-    //**************************************************************************
+
+    /**
+     * 
+     * @param data
+     * @param removeComments
+     * @return 
+     */
     private String preProcessComments(String data, boolean removeComments) {
         int startIndex;
         int length;
@@ -1444,26 +1431,25 @@ public class Documenter {
         }
         return data;
     }
-    
-    //**************************************************************************
-    // Method: ExtractItemName
-    // Given a set of data and a piece of text to search for, this 
-    // routine attempts to work out the name of the data (e.g. method
-    // name, parameter name)
-    //**************************************************************************
-    private String extractItemName(ItemData newItem, String sFind) {
+
+    /**
+     * Given a set of data and a piece of text to search for, this routine attempts
+     * to work out the name of the data (e.g. method name, parameter name)
+     * @param newItem
+     * @param findText
+     * @return 
+     */
+    private String extractItemName(ItemData newItem, String findText) {
         String sData = newItem.chunkData;
 
         //Does the data contain the string that we're looking for?
-        if (!sData.toUpperCase().contains(sFind.toUpperCase()))
-        {
+        if (!sData.toUpperCase().contains(findText.toUpperCase())) {
             return "";
         }
         //Extract the data *after* the text that we're looking for
-        sData = sData.substring(sData.toUpperCase().indexOf(sFind.toUpperCase().trim() + " ") + (sFind.trim().length() + 1)).trim();
+        sData = sData.substring(sData.toUpperCase().indexOf(findText.toUpperCase().trim() + " ") + (findText.trim().length() + 1)).trim();
 
-        if (sData.contains(" "))
-        {
+        if (sData.contains(" ")) {
             //Yes - Get everything up to the first space
             sData = sData.substring(0, sData.indexOf(" ")).trim();
         } else {
@@ -1474,105 +1460,104 @@ public class Documenter {
         }
         return sData;
     }
-    
-    //**************************************************************************
-    // Method: ExtractText
-    // Given a text string, this routine returns the section of text
-    // up to the supplied position. As well as this it also *removes*
-    // that section of text from the original text
-    //**************************************************************************
-    private String extractText(RefObject<String> sData, int iToPos) {
+
+    /**
+     * Given a text string, this routine returns the section of text up to the 
+     * supplied position. As well as this it also removes that section of text
+     * from the original text
+     * @param data
+     * @param toPos
+     * @return 
+     */
+    private String extractText(RefObject<String> data, int toPos) {
         String sResult = "";
 
         //Is the position past the end of the source text?
-        if (iToPos >= sData.argvalue.length())
-        {
-            sResult = sData.argvalue;
-            sData.argvalue = "";
+        if (toPos >= data.argvalue.length()) {
+            sResult = data.argvalue;
+            data.argvalue = "";
         } else {
             //No - Return only the section of text we were asked for
-            if (iToPos >= 0) {
+            if (toPos >= 0) {
                 //Extract the text...
-                sResult = sData.argvalue.substring(0, iToPos + 1).trim();
-                
+                sResult = data.argvalue.substring(0, toPos + 1).trim();
+
                 //...and remove it form the source text
-                sData.argvalue = sData.argvalue.substring(iToPos + 1).trim();
+                data.argvalue = data.argvalue.substring(toPos + 1).trim();
             }
         }
 
         return sResult;
     }
 
-    //**************************************************************************
-    // Method: extractReturnType
-    // Given a text string (containing something like a method or list
-    // definition) this routine works out the return type  
-    //**************************************************************************
-    private String extractReturnType(String data)
-        {
-            if (data.endsWith(">"))
-            {
-                String str = data.substring(data.indexOf("<")).trim();
-                data = data.substring(0, data.indexOf("<")).trim();
+    /**
+     * Given a text string (containing something like a method or list 
+     * definition) this routine works out the return type  
+     * @param data
+     * @return 
+     */
+    private String extractReturnType(String data) {
+        if (data.endsWith(">")) {
+            String str = data.substring(data.indexOf("<")).trim();
+            data = data.substring(0, data.indexOf("<")).trim();
 
-                if (data.contains(" "))
-                {
-                    str = data.substring(data.lastIndexOf(" ")).trim() + str;
-                }
-                else
-                {
-                    str = data.trim() + str;
-                }
-                return str.replace(" ", "").replace(",", ", ");
+            if (data.contains(" ")) {
+                str = data.substring(data.lastIndexOf(" ")).trim() + str;
+            } else {
+                str = data.trim() + str;
             }
-            if (data.contains(" "))
-            {
-                return data.substring(data.lastIndexOf(" ")).trim();
-            }
-            return "[CONSTRUCTOR]";
+            return str.replace(" ", "").replace(",", ", ");
         }
-    
-    //**************************************************************************
-    // Routine: TextCount
-    // Given a text string and a pattern to find this routine returns
-    // the number of instances of the pattern in the text
-    //**************************************************************************
-    private int textCount(String sText, String sPattern) {
+        if (data.contains(" ")) {
+            return data.substring(data.lastIndexOf(" ")).trim();
+        }
+        return "[CONSTRUCTOR]";
+    }
+
+    /**
+     * Given a text string and a pattern to find this routine returns the 
+     * number of instances of the pattern in the text
+     * @param text
+     * @param pattern
+     * @return 
+     */
+    private int textCount(String text, String pattern) {
         int iCount = 0;
         int iIndex = 0;
 
-         //Loop until we can't find any more instances of the pattern...
-        while ((iIndex = sText.indexOf(sPattern, iIndex)) != -1){
-            iIndex += sPattern.length();
+        //Loop until we can't find any more instances of the pattern...
+        while ((iIndex = text.indexOf(pattern, iIndex)) != -1) {
+            iIndex += pattern.length();
             iCount += 1;
         }
         //All done, return how many instances we found
         return iCount;
     }
 
-    //**************************************************************************
-    // Method: FormatPlaceholders
-    // This routine takes the supplied text and converts any placeholders ('[%<Name>%]' to
-    // uppercase (making them easier to match in the future)
-    // 
-    //**************************************************************************
-    private String FormatPlaceholders(String sData, ArrayList<String> alDocPlaceholders) {
+    /**
+     * This routine takes the supplied text and converts any placeholder's 
+     * ('[%<Name>%]' to uppercase (making them easier to match in the future)
+     * @param data
+     * @param alDocPlaceholders
+     * @return 
+     */
+    private String FormatPlaceholders(String data, ArrayList<String> alDocPlaceholders) {
         String sPlaceholder = "";
         StringBuilder sbResult = new StringBuilder();
 
-        while (sData.contains("[%")) //Loop until we run out of placeholders...
+        while (data.contains("[%")) //Loop until we run out of placeholders...
         {
             //Add everything *up to* the placeholder to the output data
-            sbResult.append(sData.substring(0, sData.indexOf("[%")));
+            sbResult.append(data.substring(0, data.indexOf("[%")));
 
             //Remove everything *up to* the placeholder form the source data
-            sData = sData.substring(sData.indexOf("[%"));
+            data = data.substring(data.indexOf("[%"));
 
-            if (sData.contains("%]")) //If the source data contains the *end* of a placeholder...
+            if (data.contains("%]")) //If the source data contains the *end* of a placeholder...
             { //...extract the placeholder
                 //Extract the placeholder and convert it to uppercase
-                sPlaceholder = sData.substring(0, sData.indexOf("%]") + 2).toUpperCase().trim();
-                sData = sData.substring(sData.indexOf("%]") + 2);
+                sPlaceholder = data.substring(0, data.indexOf("%]") + 2).toUpperCase().trim();
+                data = data.substring(data.indexOf("%]") + 2);
 
                 sbResult.append(sPlaceholder); //Add the placeholder to the output data
 
@@ -1586,22 +1571,21 @@ public class Documenter {
             }
         }
 
-        sbResult.append(sData); //Add any remaining data to the output
+        sbResult.append(data); //Add any remaining data to the output
 
         return sbResult.toString();
     }
 
-    //**************************************************************************
-    // Method: GenerateHtmltoc
-    // 
-    // 
-    // 
-    //**************************************************************************
+    /**
+     * 
+     * @param tocList
+     * @param outputFolder 
+     */
     private void GenerateHtmltoc(ArrayList<String> tocList, String outputFolder) {
         String upperCaseHeading = "";
 
         java.util.Collections.sort(tocList);
-        
+
         if (!outputFolder.endsWith("\\")) {
             outputFolder += "\\";
         }
@@ -1609,7 +1593,7 @@ public class Documenter {
         try {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFolder + "index.htm"))) {
                 writer.write("<Table>");
-                
+
                 for (String tocItem : tocList) {
                     String heading = tocItem.substring(0, tocItem.indexOf("[")).trim();
                     String fullFilename = tocItem.substring(tocItem.indexOf("]") + 1).trim();
@@ -1631,136 +1615,120 @@ public class Documenter {
         }
     }
 
-    //**************************************************************************
-    // Method: GenerateFlareToc
-    // 
-    // 
-    // 
-    //**************************************************************************
+    /**
+     * 
+     * @param tocList
+     * @param outputFolder 
+     */
     private void GenerateFlareToc(ArrayList<String> tocList, String outputFolder) {
         String upperCaseHeading = "";
-            String tempSource = "";
-            
-            java.util.Collections.sort(tocList);
+        String tempSource = "";
 
-            if (!outputFolder.endsWith("\\"))
-            {
-                outputFolder += "\\";
-            }
+        java.util.Collections.sort(tocList);
 
-            try {
+        if (!outputFolder.endsWith("\\")) {
+            outputFolder += "\\";
+        }
+
+        try {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFolder + "PrimaryTOC.fltoc"))) {
-                
+
                 writer.write("<?xml version=\"1.0\" encoding=\"utf-8\"?>" + NewLine);
-            writer.write("<CatapultToc" + NewLine);
-            writer.write("  Version=\"1\">" + NewLine);
-            if (configModel.TocPreNodes.trim() != "")
-            {
+                writer.write("<CatapultToc" + NewLine);
+                writer.write("  Version=\"1\">" + NewLine);
+                if (!"".equals(configModel.TocPreNodes.trim())) {
 //                writer.write(TocLinks.GenerateFlareXml(configModel.TocPreNodes).trim());
-            }
-            writer.write("  <TocEntry" + NewLine);
-            writer.write("    Title=\"API Reference\"" + NewLine);
-
-            writer.write("    Link=\"/Content/Reference/Reference.htm\">" + NewLine);
-
-            for (String tocItem : tocList)
-            {
-                String heading = extractSubString(0, tocItem, "[", 0 ).trim();
-                String fullFilename = extractSubString(tocItem, "]", 1).trim();
-                String displayText = extractSubString(tocItem, "[", 1).trim();
-                displayText = extractSubString(0, displayText, "]", 0).trim();
-
-                String source;
-                if (heading.toUpperCase().trim() != upperCaseHeading)
-                {
-                    if (upperCaseHeading.trim() != "")
-                    {
-                        writer.write("      </TocEntry>" + NewLine);
-                        writer.write("    </TocEntry>" + NewLine);
-                    }
-                    source = displayText;
-                    if (configModel.Namespace.trim() != "")
-                    {
-                        source = source.substring(configModel.Namespace.length()).trim();
-                    }
-                    if (source.contains("\\."))
-                    {
-                        source = source.substring(0, source.indexOf(".")).trim();
-                    }
-                    tempSource = source;
-                    writer.write("    <TocEntry" + NewLine);
-                    writer.write("      Title=\"" + heading + "\">" + NewLine);
-                    writer.write("      <TocEntry" + NewLine);
-                    writer.write("        Title=\"" + source + "\">" + NewLine);
-                    upperCaseHeading = heading.toUpperCase().trim();
                 }
-                else
-                {
-                    source = displayText;
-                    if (configModel.Namespace.trim() != "")
-                    {
-                        source = source.substring(configModel.Namespace.length()).trim();
-                    }
-                    if (source.contains("\\."))
-                    {
-                        source = source.substring(0, source.indexOf(".")).trim();
-                    }
-                    if (tempSource != source)
-                    {
-                        writer.write("      </TocEntry>" + NewLine);
+                writer.write("  <TocEntry" + NewLine);
+                writer.write("    Title=\"API Reference\"" + NewLine);
+
+                writer.write("    Link=\"/Content/Reference/Reference.htm\">" + NewLine);
+
+                for (String tocItem : tocList) {
+                    String heading = extractSubString(0, tocItem, "[", 0).trim();
+                    String fullFilename = extractSubString(tocItem, "]", 1).trim();
+                    String displayText = extractSubString(tocItem, "[", 1).trim();
+                    displayText = extractSubString(0, displayText, "]", 0).trim();
+
+                    String source;
+                    if (!heading.toUpperCase().trim().equals(upperCaseHeading)) {
+                        if (!"".equals(upperCaseHeading.trim())) {
+                            writer.write("      </TocEntry>" + NewLine);
+                            writer.write("    </TocEntry>" + NewLine);
+                        }
+                        source = displayText;
+                        if (!"".equals(configModel.Namespace.trim())) {
+                            source = source.substring(configModel.Namespace.length()).trim();
+                        }
+                        if (source.contains("\\.")) {
+                            source = source.substring(0, source.indexOf(".")).trim();
+                        }
+                        tempSource = source;
+                        writer.write("    <TocEntry" + NewLine);
+                        writer.write("      Title=\"" + heading + "\">" + NewLine);
                         writer.write("      <TocEntry" + NewLine);
                         writer.write("        Title=\"" + source + "\">" + NewLine);
-                        tempSource = source;
+                        upperCaseHeading = heading.toUpperCase().trim();
+                    } else {
+                        source = displayText;
+                        if (configModel.Namespace.trim() != "") {
+                            source = source.substring(configModel.Namespace.length()).trim();
+                        }
+                        if (source.contains("\\.")) {
+                            source = source.substring(0, source.indexOf(".")).trim();
+                        }
+                        if (!tempSource.equals(source)) {
+                            writer.write("      </TocEntry>" + NewLine);
+                            writer.write("      <TocEntry" + NewLine);
+                            writer.write("        Title=\"" + source + "\">" + NewLine);
+                            tempSource = source;
+                        }
                     }
-                }
 
                 //fullFilename = Path.GetFileName(fullFilename).Replace(@"\", "/").trim();
-                
-                // We need to do this to get the sub folder which is  type
-                String pattern = Pattern.quote(System.getProperty("file.separator"));
-                String[] filenameParts = fullFilename.split(pattern);
-                
-                String typeName = filenameParts[filenameParts.length - 2];
-                String fileName = filenameParts[filenameParts.length - 1];
+                    // We need to do this to get the sub folder which is  type
+                    String pattern = Pattern.quote(System.getProperty("file.separator"));
+                    String[] filenameParts = fullFilename.split(pattern);
 
-                String subFolderAndFilename = String.format("%s/%s", typeName, fileName);
+                    String typeName = filenameParts[filenameParts.length - 2];
+                    String fileName = filenameParts[filenameParts.length - 1];
+
+                    String subFolderAndFilename = String.format("%s/%s", typeName, fileName);
                 //string subFolderAndFilename = fullFilename.Substring()
-                //fullFilename = fullFilename.Substring(folder.Length).Replace(@"\", "/").trim();
-                
-                if (!configModel.IncludeTocFullNames && displayText.contains("\\."))
-                {
-                    displayText = extractSubString(displayText, ".", 1).trim();
+                    //fullFilename = fullFilename.Substring(folder.Length).Replace(@"\", "/").trim();
+
+                    if (!configModel.IncludeTocFullNames && displayText.contains("\\.")) {
+                        displayText = extractSubString(displayText, ".", 1).trim();
+                    }
+                    writer.write("        <TocEntry" + NewLine);
+                    writer.write("          Title=\"" + displayText + "\"" + NewLine);
+                    writer.write("          Link=\"/Content/Reference/" + subFolderAndFilename + "\" />" + NewLine);
+                    //writer.write(string.Format("          Link=\"/Content/Reference/{0}/{1} \" />", typeName, fileName));
                 }
-                writer.write("        <TocEntry" + NewLine);
-                writer.write("          Title=\"" + displayText + "\"" + NewLine);
-                writer.write("          Link=\"/Content/Reference/" + subFolderAndFilename + "\" />" + NewLine);
-                //writer.write(string.Format("          Link=\"/Content/Reference/{0}/{1} \" />", typeName, fileName));
-            }
-            if (upperCaseHeading.trim() != "")
-            {
-                writer.write("      </TocEntry>" + NewLine);
-                writer.write("    </TocEntry>" + NewLine);
-            }
-            writer.write("  </TocEntry>" + NewLine);
-            if (configModel.TocPostNodes.trim() != "")
-            {
+                if (!"".equals(upperCaseHeading.trim())) {
+                    writer.write("      </TocEntry>" + NewLine);
+                    writer.write("    </TocEntry>" + NewLine);
+                }
+                writer.write("  </TocEntry>" + NewLine);
+                if (configModel.TocPostNodes.trim() != "") {
 //                writer.write(TocLinks.GenerateFlareXml(configModel.TocPostNodes).trim());
-            }
-            writer.write("</CatapultToc>" + NewLine);
-            writer.flush();
-            writer.close();
-                
+                }
+                writer.write("</CatapultToc>" + NewLine);
+                writer.flush();
+                writer.close();
+
             }
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
-    //**************************************************************************
-    // Routine: copyFile
-    // Outline: Given a source file and a destination file, this routine, 
-    // copies from the source file to the destination file
-    //**************************************************************************
+    /**
+     * Given a source file and a destination file, this routine, copies from 
+     * the source file to the destination file
+     * @param sourceFilename
+     * @param destFilename
+     * @throws IOException 
+     */
     private void copyFile(String sourceFilename, String destFilename) throws IOException {
         FileChannel source = null;
         FileChannel destination = null;
@@ -1786,35 +1754,37 @@ public class Documenter {
             }
         }
     }
-   
-    //**************************************************************************
-    // Method: CreateValuesTable
-    // Given a set of delimited text, this routine converts that text
-    // into a list and then uses it to construct a HTML table (with one
-    // item in the list having one row in the output table). The HTML 
-    // used to construct the table is that specified in the config file
-    //**************************************************************************
-    private String CreateValuesTable(String sOutputMethodName, String sData) {
-        String[] strArray = sData.split("\\,");
+
+    /**
+     * Given a set of delimited text, this routine converts that text into a list 
+     * and then uses it to construct a HTML table (with one item in the list having
+     * one row in the output table). The HTML used to construct the table is that 
+     * specified in the configuration file
+     * @param outputMethodName
+     * @param data
+     * @return 
+     */
+    private String CreateValuesTable(String outputMethodName, String data) {
+        String[] strArray = data.split("\\,");
         String sHtmlPreEnumTable = configModel.HtmlPreEnumTable;
         for (String item : strArray) {
             String newValue;
             if ("".equals(item.trim())) {
                 newValue = "";
             } else {
-                configModel.SnippetsList.add(sOutputMethodName + "-value-" + item.trim());
-                newValue = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + sOutputMethodName + "-value-" + item.trim() + ".flsnp\" />";
+                configModel.SnippetsList.add(outputMethodName + "-value-" + item.trim());
+                newValue = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-value-" + item.trim() + ".flsnp\" />";
             }
             sHtmlPreEnumTable = sHtmlPreEnumTable + configModel.HtmlLoopEnumTable.replace("[%ENUMVALUE%]", item).replace("[%SNIPPETLINK%]", newValue);
         }
         return (sHtmlPreEnumTable + configModel.HtmlPostEnumTable);
     }
 
-    //**************************************************************************
-    // Method: GenerateSnippetFilename
-    // 
-    // 
-    //**************************************************************************
+    /**
+     * 
+     * @param itemData
+     * @return 
+     */
     private String GenerateSnippetFilename(ItemData itemData) {
         String str = itemData.parentClass + "-" + itemData.name;
         if ((("Methods".equals(itemData.chunkType)) || ("Tests".equals(itemData.chunkType))) || ("Web Services".equals(itemData.chunkType))) {
@@ -1834,7 +1804,7 @@ public class Documenter {
                         .replace("DATE", "D.T")
                         .replace("SOBJECT", "S.");
 
-                    //if (tempStr != item)
+                //if (tempStr != item)
                 //{
                 //    Console.WriteLine("");    
                 //}
@@ -1851,51 +1821,63 @@ public class Documenter {
         return str;
     }
 
-    //**************************************************************************
-    // Method: extractSubString
-    // By using this method it aids porting between OS's
-    //**************************************************************************
-    private static String extractSubString(String data, String toFind, int offset)
-    {
+    /**
+     * By using this method it aids porting between languages.
+     * @param data
+     * @param toFind
+     * @param offset
+     * @return 
+     */
+    private static String extractSubString(String data, String toFind, int offset) {
         return data.substring(data.indexOf(toFind) + offset).trim();
     }
-    
-    private static String extractSubString(int startIndex, String data, String toFind, int offSet)
-    {
+
+    /**
+     * By using this method it aids porting between languages.
+     * @param startIndex
+     * @param data
+     * @param toFind
+     * @param offSet
+     * @return 
+     */
+    private static String extractSubString(int startIndex, String data, String toFind, int offSet) {
         return data.substring(startIndex, data.indexOf(toFind) + offSet).trim();
     }
-    //**************************************************************************
-    // Method: DateToShortTimeString
-    // Given a date, this routine formats it as HH:mm:ss format
-    //**************************************************************************
+
+    /**
+     * Given a date, this routine formats it as HH:mm:ss format
+     * @param date
+     * @return 
+     */
     private String DateToShortTimeString(java.util.Date date) {
         Format formatter = new SimpleDateFormat("HH:mm:ss");
         return formatter.format(date);
     }
 
-    //**************************************************************************
-    // Routine: DateToShortDateString
-    // Outline: Given a date, this routine formats it in yyyy-MM-dd format
-    //**************************************************************************
+    /**
+     * Given a date, this routine formats it in yyyy-MM-dd format
+     * @param date
+     * @return 
+     */
     private String DateToShortDateString(java.util.Date date) {
         Format formatter = new SimpleDateFormat("yyyy-MM-dd");
         return formatter.format(date);
     }
 
-    //**************************************************************************
-    // Methd: DateToShortDateTimeString
-    // Given a date, this routine formats it in dd/MM/yyyy HH:mm:ss format
-    //**************************************************************************
+    /**
+     * Given a date, this routine formats it in dd/MM/yyyy HH:mm:ss format
+     * @param date
+     * @return 
+     */
     private String DateToShortDateTimeString(java.util.Date date) {
         Format formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         return formatter.format(date);
     }
-    
-    //**************************************************************************
-    // Class:   RefObject
-    // Outline: Class used to simulate the ability to pass arguments by 
-    //			reference in Java.
-    //**************************************************************************
+
+    /**
+     * Class used to simulate the ability to pass arguments by reference in Java.
+     * @param <T> 
+     */
     private final class RefObject<T> {
 
         public T argvalue;
@@ -1905,6 +1887,9 @@ public class Documenter {
         }
     }
 
+    /**
+     * 
+     */
     private class FilenameFilterImpl implements FilenameFilter {
 
         public FilenameFilterImpl() {
@@ -1917,13 +1902,21 @@ public class Documenter {
             return lowercaseName.startsWith(configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls");
         }
     }
-    
-    //**************************************************************************
-    // Method: createParamsData
-    // Given a set of data, this routine builds an output HTML 
-    // structure detailing the parameters, types, hyperlinks (where necessary) etc.
-    // 
-    //**************************************************************************    
+
+    /**
+     * Given a set of data, this routine builds an output HTML structure 
+     * detailing the parameters, types, hyperlinks (where necessary) etc.
+     * @param outputMethodName
+     * @param usedByName
+     * @param usedByInstance
+     * @param usedByChunkType
+     * @param data
+     * @param parentClass
+     * @param lineEnd
+     * @param lineStart
+     * @param table
+     * @return 
+     */
     private String createParamsData(String outputMethodName, String usedByName, int usedByInstance, String usedByChunkType, String data, String parentClass, String lineEnd, String lineStart, Boolean table) {
         Boolean flag = false;
         Boolean bError = false;
@@ -1940,7 +1933,6 @@ public class Documenter {
 
 //        if(outputMethodName.contains("GetInvoice"))
 //            debugOut("DEBUG: " + outputMethodName);
-            
         //Strip out any '/*...*/' comments (it's easier to do here than later on)
         while (data.contains("/*") && !bError) {
             String sComment = data.substring(data.indexOf("/*"));
@@ -1982,8 +1974,9 @@ public class Documenter {
                     break;
             }
             // NOT SURE ABOUT THIS
-            if(data.charAt(iCount) != ',')
+            if (data.charAt(iCount) != ',') {
                 sParam += data.charAt(iCount);
+            }
         }
         if (sParam.trim() != "") {
             list2.add(sParam);
@@ -2055,13 +2048,15 @@ public class Documenter {
         }
         return htmlPreParamTable;
     }
-    
 
-    //**************************************************************************
-    // Routine: BuildUsedByLink
-    // Outline: Given a name, chunk type and instance, this routine builds a
-    //			hyperlink to the corresponding help file
-    //**************************************************************************
+    /**
+     * Given a name, chunk type and instance, this routine builds a hyperlink 
+     * to the corresponding help file
+     * @param sName
+     * @param sChunkType
+     * @param iInstance
+     * @return 
+     */
     private String buildUsedByLink(String sName, String sChunkType, int iInstance) {
         String sLink = sName.trim();
 
@@ -2073,51 +2068,53 @@ public class Documenter {
 
         return sLink;
     }
-    
-    //**************************************************************************
-    // Method: buildReturnLink
-    // 
-    //
-    //**************************************************************************
+
+    /**
+     * 
+     * @param methodType
+     * @param usedByName
+     * @param usedByInstance
+     * @param usedByChunkType
+     * @param returnType
+     * @param parentClass
+     * @param asText
+     * @return 
+     */
     private String buildReturnLink(Integer methodType, String usedByName, int usedByInstance, String usedByChunkType, String returnType, String parentClass, boolean asText) {
         String data;
 
-            String methodTypeTxt = "service";
-            if (methodType == 1)
-            {
-                methodTypeTxt = "constructor";
-            }
-            if (methodType == 2)
-            {
-                methodTypeTxt = "web service";
-            }
-            if (asText)
-            {
+        String methodTypeTxt = "service";
+        if (methodType == 1) {
+            methodTypeTxt = "constructor";
+        }
+        if (methodType == 2) {
+            methodTypeTxt = "web service";
+        }
+        if (asText) {
 //                if(usedByName.contains("CODAAPISalesInvoice_10_0.PostIncomeSchedules"))
 //                    debugOut("QWERTY: ");
-                
-                data = buildTypeLink(returnType, parentClass, false, true);
-                if (("VOID".equals(data.toUpperCase().trim())) || ("".equals(data.trim())))
-                {
-                    return String.format("This %s does not return a value.", methodTypeTxt);
-                }
-                if (isVowel(data))
-                {
-                    return String.format("This %s returns an %s.", methodTypeTxt, data);
-                }
-                return String.format("This %s returns a %s.", methodTypeTxt, data);
-            }
 
-            data = buildTypeLink(returnType, parentClass, true, false);
-            storeTypeLink(data, buildUsedByLink(usedByName, usedByChunkType, usedByInstance), usedByName, usedByChunkType);
-            return data;
+            data = buildTypeLink(returnType, parentClass, false, true);
+            if (("VOID".equals(data.toUpperCase().trim())) || ("".equals(data.trim()))) {
+                return String.format("This %s does not return a value.", methodTypeTxt);
+            }
+            if (isVowel(data)) {
+                return String.format("This %s returns an %s.", methodTypeTxt, data);
+            }
+            return String.format("This %s returns a %s.", methodTypeTxt, data);
+        }
+
+        data = buildTypeLink(returnType, parentClass, true, false);
+        storeTypeLink(data, buildUsedByLink(usedByName, usedByChunkType, usedByInstance), usedByName, usedByChunkType);
+        return data;
     }
 
-    //**************************************************************************
-    // Method: createUsageList
-    // When called, this routine takes the supplied name and builds a
-    // 'Used By...' HTML structure
-    //**************************************************************************
+    /**
+     * When called, this routine takes the supplied name and builds a 'Used By...' HTML structure
+     * @param className
+     * @param parentClass
+     * @return 
+     */
     private String createUsageList(String className, String parentClass) {
         String sHtmlPreMethodList = "";
 
@@ -2130,12 +2127,12 @@ public class Documenter {
 
         for (ItemUsage usage : alItemUsage) {
             if ((((usage.itemName.equals((configModel.Namespace + parentClass + "." + className)))
-                    && (!"".equals(usage.usedByName.trim()))) 
+                    && (!"".equals(usage.usedByName.trim())))
                     && ((!"".equals(usage.itemName.trim()))
-                    && (!"".equals(usage.usedByType.trim())))) 
+                    && (!"".equals(usage.usedByType.trim()))))
                     && (usageList.indexOf(usage.usedByName + "|" + usage.filename + "|" + usage.usedByType) == -1)) {
-                
-//We have a set of valid data so...add it to our list of items
+
+                //We have a set of valid data so...add it to our list of items
                 usageList.add(usage.usedByName + "|" + usage.filename + "|" + usage.usedByType);
             }
         }
@@ -2157,149 +2154,150 @@ public class Documenter {
         }
         return (sHtmlPreMethodList + configModel.HtmlPostMethodList);
     }
-
-    //**************************************************************************
-    // Method: createPropertyList
-    // Given a set of class data, this routine creates a HTML table 
-    // containing all of the properties for that class (formatted as
-    // per the config file)
-    //**************************************************************************
+    
+    /**
+     * Given a set of class data, this routine creates a HTML table containing all of the properties for that class (formatted as per the config file)
+     * @param outputMethodName
+     * @param className
+     * @param parentClass
+     * @param extendsClass
+     * @param itemChunkType
+     * @param instance
+     * @return 
+     */
     private String createPropertyList(String outputMethodName, String className, String parentClass, String extendsClass, String itemChunkType, int instance) {
         String sResult = "";
-            ArrayList<String> alProps = new ArrayList<String>();
+        ArrayList<String> alProps = new ArrayList<String>();
 
-            //Does this class extend another class?
-            if (!"".equals(extendsClass.trim()))
-            {
-                String sItemName = buildTypeLink(extendsClass, parentClass, false, false);
-                sResult = "This class/type extends " + sItemName + ".<BR/>";
-                storeTypeLink(sItemName, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
-            }
+        //Does this class extend another class?
+        if (!"".equals(extendsClass.trim())) {
+            String sItemName = buildTypeLink(extendsClass, parentClass, false, false);
+            sResult = "This class/type extends " + sItemName + ".<BR/>";
+            storeTypeLink(sItemName, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
+        }
 
-            // Build the list of properties for this class
-            for (ItemData itemData : alItems)
-            {
+        // Build the list of properties for this class
+        for (ItemData itemData : alItems) {
                 // If this thing is a property (or a variable) *and* it's parent is the class
-                // we're interested in...add it to our list of properties
-                if ((("Property".equals(itemData.chunkType)) || ("Variables".equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className)))
-                {
-                    alProps.add(itemData.name + "[" + itemData.type + "]");
-                }
+            // we're interested in...add it to our list of properties
+            if ((("Property".equals(itemData.chunkType)) || ("Variables".equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className))) {
+                alProps.add(itemData.name + "[" + itemData.type + "]");
+            }
+        }
+
+        //Did we find any properties for this class?
+        if (alProps.size() <= 0) {
+            return sResult;
+        }
+
+        java.util.Collections.sort(alProps);
+
+        sResult = sResult + configModel.HtmlPrePropList;
+
+        //Iterate through the list of properties
+        for (String item : alProps) {
+            //Get the details of the property
+            String sPropertyName = item.trim();
+            String sPropertyType = extractSubString(sPropertyName, "[", 1).trim();
+            if (sPropertyType.endsWith("]")) {
+                sPropertyType = sPropertyType.substring(0, sPropertyType.length() - 1).trim();
             }
 
-            //Did we find any properties for this class?
-            if (alProps.size() <= 0)
-            {
-                return sResult;
-            }
-            
-            java.util.Collections.sort(alProps);
-            
-            sResult = sResult + configModel.HtmlPrePropList;
+            sPropertyName = extractSubString(0, sPropertyName, "[", 0).trim();
 
-            //Iterate through the list of properties
-            for (String item : alProps)
-            {
-                //Get the details of the property
-                String sPropertyName = item.trim();
-                String sPropertyType = extractSubString(sPropertyName, "[", 1).trim();
-                if (sPropertyType.endsWith("]"))
-                {
-                    sPropertyType = sPropertyType.substring(0, sPropertyType.length() - 1).trim();
-                }
-                
-                sPropertyName = extractSubString(0, sPropertyName, "[", 0).trim();
-                
-                configModel.SnippetsList.add(outputMethodName + "-prop-" + sPropertyName.trim());
-                
-                //Add a hyperlink to the type (if necessary)
-                String snippetLink = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-prop-" + sPropertyName.trim() + ".flsnp\" />";
-                sPropertyType = buildTypeLink(sPropertyType, parentClass, false, false);
-                
-                //We're referencing a type...so make sure that we remember the reference (for the 'Used By...' list)
-                storeTypeLink(sPropertyType, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
-                
-                //Add the formatted name, type etc. to the result text
-                sResult = sResult + configModel.HtmlLoopPropList.replace("[%PROPERTYNAME%]", sPropertyName).replace("[%PROPERTYTYPE%]", sPropertyType).replace("[%SNIPPETLINK%]", snippetLink);
-            }
-            return (sResult + configModel.HtmlPostPropList);
+            configModel.SnippetsList.add(outputMethodName + "-prop-" + sPropertyName.trim());
+
+            //Add a hyperlink to the type (if necessary)
+            String snippetLink = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-prop-" + sPropertyName.trim() + ".flsnp\" />";
+            sPropertyType = buildTypeLink(sPropertyType, parentClass, false, false);
+
+            //We're referencing a type...so make sure that we remember the reference (for the 'Used By...' list)
+            storeTypeLink(sPropertyType, buildUsedByLink(className, itemChunkType, instance), configModel.Namespace + parentClass + "." + className, itemChunkType);
+
+            //Add the formatted name, type etc. to the result text
+            sResult = sResult + configModel.HtmlLoopPropList.replace("[%PROPERTYNAME%]", sPropertyName).replace("[%PROPERTYTYPE%]", sPropertyType).replace("[%SNIPPETLINK%]", snippetLink);
+        }
+        return (sResult + configModel.HtmlPostPropList);
     }
 
-    //**************************************************************************
-    // Method: createInterfaceList
-    // 
-    // 
-    //**************************************************************************
+    /**
+     * 
+     * @param className
+     * @param instance
+     * @param chunkType
+     * @param interfaceData
+     * @param parentClass
+     * @return 
+     */
     private String createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
-            if (!"Interfaces".equals(chunkType)) {
-                return "";
-            }
-            
-            if (interfaceData.contains("{"))
-            {
-                interfaceData = extractSubString(interfaceData, "{", 1);
-            }
-            if (interfaceData.contains("}"))
-            {
-                interfaceData = extractSubString(0, interfaceData, "}", 0);
+        if (!"Interfaces".equals(chunkType)) {
+            return "";
+        }
+
+        if (interfaceData.contains("{")) {
+            interfaceData = extractSubString(interfaceData, "{", 1);
+        }
+        if (interfaceData.contains("}")) {
+            interfaceData = extractSubString(0, interfaceData, "}", 0);
+        }
+
+        String sHtmlPreInterfaces = "";
+
+        String[] strArray = interfaceData.split(";");
+        if (strArray.length <= 0) {
+            return sHtmlPreInterfaces;
+        }
+
+        sHtmlPreInterfaces = configModel.HtmlPreInterfaces;
+        for (String preItem : strArray) {
+            if ("".equals(preItem)) {
+                continue;
             }
 
-            String sHtmlPreInterfaces = "";
+            ItemData newItem = new ItemData();
+            newItem.chunkData = preItem.trim();
 
-            String[] strArray = interfaceData.split(";");
-            if (strArray.length <= 0)
-            {
-                return sHtmlPreInterfaces;
-            }
-            
-            sHtmlPreInterfaces = configModel.HtmlPreInterfaces;
-            for (String preItem : strArray)
-            {
-                if ("".equals(preItem))
-                {
-                    continue;
+            if (newItem.chunkData.contains("(")) {
+                newItem = decodeMethod(newItem);
+                String name = newItem.name;
+                String paramsData = newItem.params;
+                paramsData = createParamsData("", className, instance, chunkType, paramsData, parentClass, "", "", false);
+
+                String str4;
+                if ("".equals(newItem.type.trim())) {
+                    str4 = "void";
+                } else {
+                    str4 = buildTypeLink(newItem.type, className, false, false);
                 }
 
-                ItemData newItem = new ItemData();
-                newItem.chunkData = preItem.trim();
-
-                if (newItem.chunkData.contains("("))
-                {
-                    newItem = decodeMethod(newItem);
-                    String name = newItem.name;
-                    String paramsData = newItem.params;
-                    paramsData = createParamsData("", className, instance, chunkType, paramsData, parentClass, "", "", false);
-                    
-                    String str4;
-                    if ("".equals(newItem.type.trim())) {
-                        str4 = "void";
-                    } else {
-                        str4 = buildTypeLink(newItem.type, className, false, false);
+                String newValue = "";
+                for (ItemData item : alItems) {
+                    if (((!item.name.toUpperCase().trim().equals(name.toUpperCase().trim()))
+                            || (!item.parentClass.toUpperCase().trim().equals(parentClass.toUpperCase().trim())))
+                            || (!"Methods".equals(item.chunkType))) {
+                        continue;
                     }
-                    
-                    String newValue = "";
-                    for (ItemData item : alItems)
-                    {
-                        if (((!item.name.toUpperCase().trim().equals(name.toUpperCase().trim())) ||
-                             (!item.parentClass.toUpperCase().trim().equals(parentClass.toUpperCase().trim()))) ||
-                            (!"Methods".equals(item.chunkType))) continue;
-                        newValue = getChunkTypePath(item.chunkType) + name + item.instance + ".htm";
-                        break;
-                    }
-                    if (!"".equals(name.trim()))
-                    {
-                        sHtmlPreInterfaces = sHtmlPreInterfaces + configModel.HtmlLoopInterfaces.replace("[%ITEMLINK%]", newValue).replace("[%NAME%]", name).replace("[%TYPE%]", str4).replace("[%PARAMETERS%]", paramsData);
-                    }
+                    newValue = getChunkTypePath(item.chunkType) + name + item.instance + ".htm";
+                    break;
+                }
+                if (!"".equals(name.trim())) {
+                    sHtmlPreInterfaces = sHtmlPreInterfaces + configModel.HtmlLoopInterfaces.replace("[%ITEMLINK%]", newValue).replace("[%NAME%]", name).replace("[%TYPE%]", str4).replace("[%PARAMETERS%]", paramsData);
                 }
             }
-            return (sHtmlPreInterfaces + configModel.HtmlPostInterfaces);
+        }
+        return (sHtmlPreInterfaces + configModel.HtmlPostInterfaces);
     }
-    
-    //**************************************************************************
-    // Method: createSnippetFiles
-    // 
-    // 
-    //**************************************************************************
+
+    /**
+     * 
+     * @param outputName
+     * @param paramItems
+     * @param snippetDescr
+     * @param snippetExample
+     * @param snippetInput
+     * @param snippetOutput
+     * @param snippetMarker 
+     */
     private void createSnippetFiles(String outputName, List<String> paramItems, boolean snippetDescr, boolean snippetExample, boolean snippetInput, boolean snippetOutput, String snippetMarker) {
         String str = outputName.substring(0, outputName.lastIndexOf("\\"));
 
@@ -2325,7 +2323,7 @@ public class Documenter {
             String text = snippetMarker;
 
             String value = "";
-                // See if the item contains the key
+            // See if the item contains the key
             //var kvpResult = new Map<String, String>();
             for (String key : snippetText.keySet()) {
                 if (item.contains(key)) {
@@ -2347,14 +2345,14 @@ public class Documenter {
         }
     }
 
-    //**************************************************************************
-    // Method: createSnippetFile
-    // 
-    // 
-    //**************************************************************************
+    /**
+     * 
+     * @param filename
+     * @param snippetMarker 
+     */
     private void createSnippetFile(String filename, String snippetMarker) {
         createdSnippetFiles++;
-        
+
         try {
             File file = new File(filename);
 
@@ -2375,17 +2373,20 @@ public class Documenter {
             debugOut(e.getMessage());
         }
     }
-    
+
     private String getDocData(String sPlaceholder, String sName, String sParentClass) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    //**************************************************************************
-    // Method: StoreTypeLink
-    // Called when we need to store that a type is being 
-    // used/referenced somewhere in the system, this routine stores the
-    // details so that we can build the 'Used By...' output
-    //**************************************************************************
+
+    /**
+     * Called when we need to store that a type is being used/referenced somewhere 
+     * in the system, this routine stores the details so that we can build the 
+     * 'Used By...' output
+     * @param itemName
+     * @param filename
+     * @param usedByName
+     * @param usedByType 
+     */
     private void storeTypeLink(String itemName, String filename, String usedByName, String usedByType) {
         boolean bFound = false;
         ItemUsage itemUsage = new ItemUsage();
@@ -2401,7 +2402,7 @@ public class Documenter {
         itemName = itemName.substring(0, itemName.indexOf("<")).trim();
 
         //Do we have a name?
-        if ((!itemName.trim().equals("")) 
+        if ((!itemName.trim().equals(""))
                 && (!usedByName.trim().equals(""))) {
             //Yes - Build a Usage structure
             itemUsage.itemName = itemName;
@@ -2431,13 +2432,16 @@ public class Documenter {
         }
     }
 
-    //**************************************************************************
-    // Method: buildTypeLink
-    // Given a set of data about a type, this routine bundles/formats
-    // the type so that, if necessary, it includes a hyperlink to the
-    // documentation for the type
-    //**************************************************************************
-    private String buildTypeLink(String sType, String sParentClass, boolean bItalic, boolean bAsText) {
+    /**
+     * Given a set of data about a type, this routine bundles/formats the type 
+     * so that, if necessary, it includes a hyperlink to the documentation for the type
+     * @param type
+     * @param parentClass
+     * @param asItalic
+     * @param asText
+     * @return 
+     */
+    private String buildTypeLink(String type, String parentClass, boolean asItalic, boolean asText) {
         String sResult = "";
         String sPrepend = "";
         String sAppend = "";
@@ -2447,41 +2451,41 @@ public class Documenter {
         String sLink = "";
         ItemData objItem = null;
 
-        if (sType.contains("<")) //Is the type a list/set/map (e.g. List<Integer>)?
+        if (type.contains("<")) //Is the type a list/set/map (e.g. List<Integer>)?
         {
             //Yes - Get the *inner* type (e.g. Integer)
-            sPrepend = sType.substring(0, sType.indexOf("<") + 1).trim();
+            sPrepend = type.substring(0, type.indexOf("<") + 1).trim();
             sAppend = "&gt;";
 
             sPrepend = sPrepend.replace("<", "&lt;");
             sPrepend = sPrepend.replace(">", "&gt;");
 
-            sType = sType.substring(sType.indexOf("<") + 1).trim();
+            type = type.substring(type.indexOf("<") + 1).trim();
 
-            if (sType.endsWith(">")) {
-                sType = sType.substring(0, sType.length() - 1).trim();
+            if (type.endsWith(">")) {
+                type = type.substring(0, type.length() - 1).trim();
             }
         }
 
-        if (sType.trim().endsWith("[]")) //Is this old notation for an array?
+        if (type.trim().endsWith("[]")) //Is this old notation for an array?
         {
             //Yes - 'Translate' it into new notation
             sPrepend = "array&lt;";
             sAppend = "&gt;";
 
-            sType = sType.trim();
-            sType = sType.substring(0, sType.length() - 2).trim();
+            type = type.trim();
+            type = type.substring(0, type.length() - 2).trim();
         }
 
-        if (sType.contains(".")) //Is the type within another class?
+        if (type.contains(".")) //Is the type within another class?
         {
             //Yes - Extract *only* the type 
-            sFindClass = sType.substring(0, sType.lastIndexOf(".")).trim();
-            sFindName = sType.substring(sType.lastIndexOf(".") + 1).trim();
+            sFindClass = type.substring(0, type.lastIndexOf(".")).trim();
+            sFindName = type.substring(type.lastIndexOf(".") + 1).trim();
         } else {
             //No - Use the whole text as the type
-            sFindName = sType;
-            sFindClass = sParentClass;
+            sFindName = type;
+            sFindClass = parentClass;
         }
 
         //Try to find the type in our list of things...
@@ -2500,27 +2504,22 @@ public class Documenter {
             }
         }
 
-         //If we have a link, create the HTML...
-        if (!sLink.trim().equals(""))
-        {
+        //If we have a link, create the HTML...
+        if (!sLink.trim().equals("")) {
             sResult = "<a href=\"" + sLink + "\">" + configModel.Namespace + sFindClass + "." + sFindName + "</a>";
         } else {
             //...otherwise use the *original* type data (as it'll contain any prefix text)
-            sResult = sType;
+            sResult = type;
         }
-        
+
         //Are we outputting the results as text?
-        if (bAsText) 
-        { 					
+        if (asText) {
             //Yes - Build up the type as a more 'text like' string
             //Do we have anything to add onto the start of the results (e.g. 'List<')?
-            if (sPrepend.trim().equals("")) 
-            {					
+            if (sPrepend.trim().equals("")) {
                 //No - Just add on 'object' (e.g. 'MyType object')
-                if (!sResult.trim().equals(""))
-                {
-                    if (!"void".equals(sResult.toLowerCase().trim()))
-                    {
+                if (!sResult.trim().equals("")) {
+                    if (!"void".equals(sResult.toLowerCase().trim())) {
                         sResult = sResult + " object";
                     }
                 } else {
@@ -2537,43 +2536,47 @@ public class Documenter {
         }
 
         //If we need to make the results italic...wrap them in HTML tags
-        if (bItalic && (!sResult.trim().equals(""))) {
+        if (asItalic && (!sResult.trim().equals(""))) {
             sResult = "<i>" + sResult + "</i>";
         }
 
         return sResult;
     }
-    
-    //**************************************************************************
-    // Routine: GetChunkTypePath
-    // Outline: Given a chunk type, this routine works out which output path
-    //			corresponds to it
-    //**************************************************************************
-    private String getChunkTypePath(String sChunkType) {
+
+    /**
+     * Given a chunk type, this routine works out which output path corresponds to it
+     * @param chunkType
+     * @return 
+     */
+    private String getChunkTypePath(String chunkType) {
         String sResult = "";
 
-        if (sChunkType.equals(ctClass)) {
+        if (chunkType.equals(ctClass)) {
             sResult = "../Types/";
         }
-        if (sChunkType.equals(ctEnum)) {
+        if (chunkType.equals(ctEnum)) {
             sResult = "../Enums/";
         }
-        if (sChunkType.equals(ctMethod)) {
+        if (chunkType.equals(ctMethod)) {
             sResult = "../Services/";
         }
-        if (sChunkType.equals(ctTest)) {
+        if (chunkType.equals(ctTest)) {
             sResult = "../Tests/";
         }
-        if (sChunkType.equals(ctUnknown)) {
+        if (chunkType.equals(ctUnknown)) {
             sResult = "../Unknown/";
         }
 
         return sResult;
     }
-    
-    private Boolean isVowel(String sData)
-        {
-            sData = sData.toUpperCase().trim();
-            return (sData.startsWith("A") || sData.startsWith("E")) || ((sData.startsWith("I") || sData.startsWith("O")) || sData.startsWith("U"));
-        }
+
+    /**
+     * Tests for a vowel
+     * @param sData
+     * @return 
+     */
+    private Boolean isVowel(String sData) {
+        sData = sData.toUpperCase().trim();
+        return (sData.startsWith("A") || sData.startsWith("E")) || ((sData.startsWith("I") || sData.startsWith("O")) || sData.startsWith("U"));
+    }
 }
