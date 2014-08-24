@@ -12,14 +12,14 @@ package documenter.Classes;
  */
 public class ChunkTypes {
     public static final String ctVariable = "Variables";
-    private static final String ctUnknown = "Unknown";
-    private static final String ctTest = "Tests";
-    private static final String ctMethod = "Methods";
-    private static final String ctWebServices = "Web Services";
-    private static final String ctInterfaces = "Interfaces";
-    private static final String ctClass = "Classes/Types";
-    private static final String ctEnum = "Enumerations";
-    private static final String ctComment = "Comment";
-    private static final String ctProperty = "Property";
-    private static final String ctRemoteAction = "RemoteAction";
+    public static final String ctUnknown = "Unknown";
+    public static final String ctTest = "Tests";
+    public static final String ctMethod = "Methods";
+    public static final String ctWebServices = "Web Services";
+    public static final String ctInterfaces = "Interfaces";
+    public static final String ctClass = "Classes/Types";
+    public static final String ctEnum = "Enumerations";
+    public static final String ctComment = "Comment";
+    public static final String ctProperty = "Property";
+    public static final String ctRemoteAction = "RemoteAction";
 }
