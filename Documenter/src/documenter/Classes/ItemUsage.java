@@ -11,8 +11,8 @@ package documenter.Classes;
  */
 public class ItemUsage {
 
-    public String sItemName = "";
-    public String sUsedByName = "";
-    public String sFilename = "";
-    public String sUsedByType = "";
+    public String itemName = "";
+    public String usedByName = "";
+    public String filename = "";
+    public String usedByType = "";
 }

@@ -11,7 +11,7 @@ package documenter.Classes;
  */
 public class FilenameVersionFf {
 
-    public String Name = "";
-    public String FullName = "";
-    public int Version = 0;
+    public String name = "";
+    public String fullName = "";
+    public int version = 0;
 }

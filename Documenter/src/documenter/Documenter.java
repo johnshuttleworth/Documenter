@@ -114,7 +114,8 @@ public class Documenter {
         if (ceEngine.globalAbort) //Do we have a global abort?
         {
             System.out.printf("\n***ABORT***\n\nDebug: %s\n", ceEngine.globalAbortText);
-        } else {																				//No - Run the rest of the process
+        } else {
+            //No - Run the rest of the process
 //            if (args.length >= 2) //Do we have a second parameter (override output path)? 
 //            {
 //                ceEngine.outputFolder = args[1];		//Yes - Use it 
@@ -221,9 +222,9 @@ public class Documenter {
                     }
                     
                     FilenameVersionFf filenameVersionFf = new FilenameVersionFf();
-                    filenameVersionFf.Name = filenameSplitStrings[0];
-                    filenameVersionFf.FullName = file.getPath();
-                    filenameVersionFf.Version = version;
+                    filenameVersionFf.name = filenameSplitStrings[0];
+                    filenameVersionFf.fullName = file.getPath();
+                    filenameVersionFf.version = version;
                     
                     int result = getIndexOf(latestVersionFileList, filenameVersionFf);
                     if (-1 == result) {
@@ -231,7 +232,7 @@ public class Documenter {
                         latestVersionFileList.add(filenameVersionFf);
                     } else {
                         // Check to seee if we are newer if so update
-                        if (filenameVersionFf.Version > latestVersionFileList.get(result).Version) {
+                        if (filenameVersionFf.version > latestVersionFileList.get(result).version) {
                             latestVersionFileList.set(result, filenameVersionFf);
                         } else {
                             //Debug.WriteLine(filenameVersionFf.FullName);
@@ -257,7 +258,7 @@ public class Documenter {
         
         List<String> excludeList = configModel.AllExcludeFiles;
             for (FilenameVersionFf fileName : latestVersionFileList) {
-                String name = fileName.Name;
+                String name = fileName.name;
                 if (name != null) {
                     name = name.toLowerCase().trim();
 
@@ -268,10 +269,10 @@ public class Documenter {
 
                     if (!excludeList.contains(name)) {
                         totalFiles++;
-                        scanFile(fileName.FullName);
+                        scanFile(fileName.fullName);
                     } else {
                         excludedFiles++;
-                        System.out.printf(fileName.FullName + " not scaned " + excludedFiles);
+                        System.out.printf(fileName.fullName + " not scaned " + excludedFiles);
                     }
                 }
             }
@@ -693,7 +694,7 @@ public class Documenter {
         try {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(filesProcessedFileName))) {
                 for (FilenameVersionFf file : latestVersionFileList) {
-                    writer.write(file.FullName + "\n");
+                    writer.write(file.fullName + "\n");
                 }
             }
         } catch (IOException e) {
@@ -749,7 +750,7 @@ public class Documenter {
 
         int index = -1;
         for (FilenameVersionFf file : latestVersionFileList) {
-            if (file.Name.equals(filenameVersionFf.Name)) {
+            if (file.name.equals(filenameVersionFf.name)) {
                 index = latestVersionFileList.indexOf(file);
             }
         }
@@ -1195,7 +1196,8 @@ public class Documenter {
 
         //Work out if this class extends another class...and store it if it does
         if (newItem.chunkData.toLowerCase().contains(" extends ")) //Does the chunk data contain 'extends'?
-        { 																//Yes - Work out *what* it extends
+        {
+            //Yes - Work out *what* it extends
             newItem.extendsClass = newItem.chunkData.substring(newItem.chunkData.toLowerCase().indexOf(" extends ") + 8).trim();
 
             if (newItem.extendsClass.endsWith("{")) {
@@ -1583,7 +1585,8 @@ public class Documenter {
                 sbResult.append(sPlaceholder); //Add the placeholder to the output data
 
                 if (alDocPlaceholders != null) //Are we building a list of 'DOC' placeholders?
-                { 									//Yes - Add this to the list (Assuming that it's a 'DOC' placeholder of course)
+                {
+                    //Yes - Add this to the list (Assuming that it's a 'DOC' placeholder of course)
                     if (sPlaceholder.startsWith("[%DOC:") && (alDocPlaceholders.indexOf(sPlaceholder) < 0)) {
                         alDocPlaceholders.add(sPlaceholder);
                     }
@@ -2134,14 +2137,14 @@ public class Documenter {
         List<String> usageList = new ArrayList<>();
 
         for (ItemUsage usage : alItemUsage) {
-            if ((((usage.sItemName.equals((configModel.Namespace + parentClass + "." + className)))
-                    && (!"".equals(usage.sUsedByName.trim()))) 
-                    && ((!"".equals(usage.sItemName.trim()))
-                    && (!"".equals(usage.sUsedByType.trim())))) 
-                    && (usageList.indexOf(usage.sUsedByName + "|" + usage.sFilename + "|" + usage.sUsedByType) == -1)) {
+            if ((((usage.itemName.equals((configModel.Namespace + parentClass + "." + className)))
+                    && (!"".equals(usage.usedByName.trim()))) 
+                    && ((!"".equals(usage.itemName.trim()))
+                    && (!"".equals(usage.usedByType.trim())))) 
+                    && (usageList.indexOf(usage.usedByName + "|" + usage.filename + "|" + usage.usedByType) == -1)) {
                 
 //We have a set of valid data so...add it to our list of items
-                usageList.add(usage.sUsedByName + "|" + usage.sFilename + "|" + usage.sUsedByType);
+                usageList.add(usage.usedByName + "|" + usage.filename + "|" + usage.usedByType);
             }
         }
 
@@ -2389,46 +2392,49 @@ public class Documenter {
     // Method: StoreTypeLink
     // Called when we need to store that a type is being 
     // used/referenced somewhere in the system, this routine stores the
-    // 	details so that we can build the 'Used By...' output
+    // details so that we can build the 'Used By...' output
     //**************************************************************************
-    private void storeTypeLink(String sItemName, String sFilename, String sUsedByName, String sUsedByType) {
+    private void storeTypeLink(String itemName, String filename, String usedByName, String usedByType) {
         boolean bFound = false;
-        ItemUsage iuUsage = new ItemUsage();
+        ItemUsage itemUsage = new ItemUsage();
         ItemUsage iuCheck = null;
 
-        if (!sItemName.toUpperCase().trim().contains("<A HREF=")) //Does the item name contain a hyperlink? 
+        if (!itemName.toUpperCase().trim().contains("<A HREF=")) //Does the item name contain a hyperlink? 
         {
-            return;														//No - We can't link to it then (so get out and don't store it) 
+            //No - We can't link to it then (so get out and don't store it) 
+            return;
         }
         //Extract the item name form the hyperlink
-        sItemName = sItemName.substring(sItemName.indexOf("\">") + 2);
-        sItemName = sItemName.substring(0, sItemName.indexOf("<")).trim();
+        itemName = itemName.substring(itemName.indexOf("\">") + 2);
+        itemName = itemName.substring(0, itemName.indexOf("<")).trim();
 
-        if ((!sItemName.trim().equals("")) //Do we have a name? 
-                && (!sUsedByName.trim().equals(""))) {											//Yes - Build a Usage structure
-            iuUsage.sItemName = sItemName;
-            iuUsage.sUsedByName = sUsedByName;
-            iuUsage.sFilename = sFilename;
-            iuUsage.sUsedByType = sUsedByType;
+        //Do we have a name?
+        if ((!itemName.trim().equals("")) 
+                && (!usedByName.trim().equals(""))) {
+            //Yes - Build a Usage structure
+            itemUsage.itemName = itemName;
+            itemUsage.usedByName = usedByName;
+            itemUsage.filename = filename;
+            itemUsage.usedByType = usedByType;
 
-			//We have our usage structure *but* we don't want repeated values (as it
+            //We have our usage structure *but* we don't want repeated values (as it
             //would result in the 'Used By...' list containing duplicate entries). 
             //So...check to see if we already have an entry with the same data...
             for (int iCount = 0; iCount < alItemUsage.size(); iCount++) {
                 iuCheck = (ItemUsage) alItemUsage.toArray()[iCount];
 
-                if ((sFilename.equals(iuCheck.sFilename)) //If this item matches our new item... 
-                        && (sUsedByName.equals(iuCheck.sUsedByName))
-                        && (sUsedByType.equals(iuCheck.sUsedByType))
-                        && (sItemName.equals(iuCheck.sItemName))) {
-                    bFound = true;									//...flag it and get out
+                if ((filename.equals(iuCheck.filename)) //If this item matches our new item... 
+                        && (usedByName.equals(iuCheck.usedByName))
+                        && (usedByType.equals(iuCheck.usedByType))
+                        && (itemName.equals(iuCheck.itemName))) {
+                    bFound = true;
                     break;
                 }
             }
 
             if (!bFound) //Did we already find a matching item?
             {
-                alItemUsage.add(iuUsage);		//No - Add it to the list
+                alItemUsage.add(itemUsage);		//No - Add it to the list
             }
         }
     }
@@ -2450,7 +2456,8 @@ public class Documenter {
         ItemData objItem = null;
 
         if (sType.contains("<")) //Is the type a list/set/map (e.g. List<Integer>)?
-        {								//Yes - Get the *inner* type (e.g. Integer)
+        {
+            //Yes - Get the *inner* type (e.g. Integer)
             sPrepend = sType.substring(0, sType.indexOf("<") + 1).trim();
             sAppend = "&gt;";
 
@@ -2465,7 +2472,8 @@ public class Documenter {
         }
 
         if (sType.trim().endsWith("[]")) //Is this old notation for an array?
-        { 										//Yes - 'Translate' it into new notation
+        {
+            //Yes - 'Translate' it into new notation
             sPrepend = "array&lt;";
             sAppend = "&gt;";
 
@@ -2474,10 +2482,12 @@ public class Documenter {
         }
 
         if (sType.contains(".")) //Is the type within another class?
-        {										//Yes - Extract *only* the type 
+        {
+            //Yes - Extract *only* the type 
             sFindClass = sType.substring(0, sType.lastIndexOf(".")).trim();
             sFindName = sType.substring(sType.lastIndexOf(".") + 1).trim();
-        } else {										//No - Use the whole text as the type
+        } else {
+            //No - Use the whole text as the type
             sFindName = sType;
             sFindClass = sParentClass;
         }
