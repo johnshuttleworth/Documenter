@@ -374,7 +374,7 @@ public class Documenter {
                     //No - Just output/save it
                     outputChunk(chunkType, chunk, "", filename);
 
-                    if (false == chunkType.equals(ChunkTypes.ctComment)) {
+                    if (false == chunkType.equals(ChunkTypes.comment)) {
                         String message = String.format("WARNING: %s %s we are not checking for not marked as with sharing", chunkType, filename);
                         debugOut(message);
                     }
@@ -456,28 +456,28 @@ public class Documenter {
         alItemUsage.clear();
 
         if (configModel.IncludeUnknown) {
-            CreateDocs(outputFolder + UnknownFolder, outputFolder, ChunkTypes.ctUnknown, configModel.UnknownTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + UnknownFolder, outputFolder, ChunkTypes.unknown, configModel.UnknownTemplateFolder, tocList, true);
         }
         if (configModel.IncludeTests) {
-            CreateDocs(outputFolder + TestsFolder, outputFolder, ChunkTypes.ctTest, configModel.TestTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + TestsFolder, outputFolder, ChunkTypes.test, configModel.TestTemplateFolder, tocList, true);
         }
         if (configModel.IncludeMethods) {
-            CreateDocs(outputFolder + ServicesFolder, outputFolder, ChunkTypes.ctMethod, configModel.MethodsTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + ServicesFolder, outputFolder, ChunkTypes.method, configModel.MethodsTemplateFolder, tocList, true);
         }
         if (configModel.IncludeWebServices) {
-            CreateDocs(outputFolder + ServicesFolder, outputFolder, ChunkTypes.ctWebServices, configModel.WebServicesTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + ServicesFolder, outputFolder, ChunkTypes.webServices, configModel.WebServicesTemplateFolder, tocList, true);
         }
         if (configModel.IncludeInterfaces) {
-            CreateDocs(outputFolder + InterfacesFolder, outputFolder, ChunkTypes.ctInterfaces, configModel.InterfaceTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + InterfacesFolder, outputFolder, ChunkTypes.interfaces, configModel.InterfaceTemplateFolder, tocList, true);
         }
         if (configModel.IncludeClasses) {
-            CreateDocs("", outputFolder, ChunkTypes.ctClass, configModel.ClassTemplateFolder, tocList, false);
+            CreateDocs("", outputFolder, ChunkTypes.classType, configModel.ClassTemplateFolder, tocList, false);
         }
         if (configModel.IncludeClasses) {
-            CreateDocs(outputFolder + TypesFolder, outputFolder, ChunkTypes.ctClass, configModel.ClassTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + TypesFolder, outputFolder, ChunkTypes.classType, configModel.ClassTemplateFolder, tocList, true);
         }
         if (configModel.IncludeEnums) {
-            CreateDocs(outputFolder + EnumsFolder, outputFolder, ChunkTypes.ctEnum, configModel.EnumTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + EnumsFolder, outputFolder, ChunkTypes.enumType, configModel.EnumTemplateFolder, tocList, true);
         }
         if ((configModel.Toc == 1) || (configModel.Toc == 3)) {
             GenerateHtmltoc(tocList, String.format("%s%s", outputFolder, IndexFolder));
@@ -550,13 +550,13 @@ public class Documenter {
                 }
 
                 // This is for debugging
-                if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ChunkTypes.ctEnum == null : docType.equals(ChunkTypes.ctEnum))) {
+                if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ChunkTypes.enumType == null : docType.equals(ChunkTypes.enumType))) {
                     createDocsEnums++;
                 }
 
                 if (((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType))
-                        && (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ChunkTypes.ctClass))))
-                        && (((!itemData.chunkType.equals(ChunkTypes.ctMethod)) || (itemData.methodType != 1)) || !configModel.SkipConstructor)) {
+                        && (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ChunkTypes.classType))))
+                        && (((!itemData.chunkType.equals(ChunkTypes.method)) || (itemData.methodType != 1)) || !configModel.SkipConstructor)) {
 
                     //Are we creating files?
                     if (createFiles) {
@@ -769,7 +769,7 @@ public class Documenter {
         String savedData = data.argvalue;
 
         //Assume that we have no idea what this chunk is (as we don't at this point)
-        chunkType.argvalue = ChunkTypes.ctUnknown;
+        chunkType.argvalue = ChunkTypes.unknown;
 
         //Does the data start with a '//' (i.e. is this a comment)?
         if (data.argvalue.startsWith("//")) {
@@ -781,7 +781,7 @@ public class Documenter {
                 data.argvalue = "";
             }
 
-            chunkType.argvalue = ChunkTypes.ctComment;
+            chunkType.argvalue = ChunkTypes.comment;
             return result;
         }
 
@@ -789,7 +789,7 @@ public class Documenter {
         if (data.argvalue.startsWith("/*")) {
             //Yes - Extract the comment, set the return type...and get out
             result = extractText(data, data.argvalue.indexOf("*/") + 1);
-            chunkType.argvalue = ChunkTypes.ctComment;
+            chunkType.argvalue = ChunkTypes.comment;
             return result;
         }
 
@@ -850,37 +850,37 @@ public class Documenter {
 
                     //Regular bracket before brace bracket?
                     if ((iBracket < iBrace) && (iBracket != -1)) {
-                        chunkType.argvalue = ChunkTypes.ctMethod;
+                        chunkType.argvalue = ChunkTypes.method;
                     } else {
-                        chunkType.argvalue = ChunkTypes.ctClass;
+                        chunkType.argvalue = ChunkTypes.classType;
                     }
                 } else {
                     //No - Simple variable
                     iChunkEnd = 0;
-                    chunkType.argvalue = ChunkTypes.ctVariable;
+                    chunkType.argvalue = ChunkTypes.variable;
                 }
             } else {
                 //Brace bracket before regular bracket?
                 if ((iBrace < iBracket) && (iBrace != -1)) {
                     //Yes - Enumeration
                     iChunkEnd = 1;
-                    chunkType.argvalue = ChunkTypes.ctEnum;
+                    chunkType.argvalue = ChunkTypes.enumType;
                 } else {
                     //Regular bracket before brace bracket?
                     if ((iBracket < iBrace) && (iBracket != -1)) {
                         iChunkEnd = 2;
-                        chunkType.argvalue = ChunkTypes.ctMethod;
+                        chunkType.argvalue = ChunkTypes.method;
                     } else {
                         //Brace and *no* regular bracket?
                         if ((iBrace != -1) && (iBracket == -1)) {
                             iChunkEnd = 2;
-                            //chunkType.argvalue = ctProperty;
+                            //chunkType.argvalue = property;
                             chunkType.argvalue = data.argvalue.startsWith("enum ") ? "Enumerations" : "Property";
                         } else {
                             //No brace, no bracket and no equals?
                             if ((iBrace == -1) && (iBracket == -1)) {
                                 iChunkEnd = 0;
-                                chunkType.argvalue = ChunkTypes.ctVariable;
+                                chunkType.argvalue = ChunkTypes.variable;
                             }
                         }
                     }
@@ -893,26 +893,26 @@ public class Documenter {
                     && (data.argvalue.toLowerCase().contains("class"))) {
                 //Yes - Read to the end of it
                 iChunkEnd = 2;
-                chunkType.argvalue = ChunkTypes.ctClass + "3";
+                chunkType.argvalue = ChunkTypes.classType + "3";
             }
 
             if (check.equals("@REMOTEACTION")) {
-                chunkType.argvalue = ChunkTypes.ctRemoteAction;
+                chunkType.argvalue = ChunkTypes.remoteAction;
                 result = "";
             }
 
             //If this method is actually a test...
-            if ((chunkType.argvalue.equals(ChunkTypes.ctMethod)) && (check.equals("@ISTEST"))) {
+            if ((chunkType.argvalue.equals(ChunkTypes.method)) && (check.equals("@ISTEST"))) {
                 //...mark it as such
-                chunkType.argvalue = ChunkTypes.ctTest;
+                chunkType.argvalue = ChunkTypes.test;
             }
 
-            if ((chunkType.argvalue.equals(ChunkTypes.ctMethod)) && (check.equals("WEBSERVICE"))) {
-                chunkType.argvalue = ChunkTypes.ctWebServices;
+            if ((chunkType.argvalue.equals(ChunkTypes.method)) && (check.equals("WEBSERVICE"))) {
+                chunkType.argvalue = ChunkTypes.webServices;
             }
 
             if (data.argvalue.toUpperCase().trim().startsWith("INTERFACE")) {
-                chunkType.argvalue = ChunkTypes.ctInterfaces;
+                chunkType.argvalue = ChunkTypes.interfaces;
             }
 
             switch (iChunkEnd) {
@@ -946,9 +946,9 @@ public class Documenter {
             }
 
             //Check to see if this thing is an enum...and set it as such (if it is)
-            if ((chunkType.argvalue.equals(ChunkTypes.ctClass))
+            if ((chunkType.argvalue.equals(ChunkTypes.classType))
                     && (!result.contains(";") && (result.toLowerCase().contains(" enum ")))) {
-                chunkType.argvalue = ChunkTypes.ctEnum;
+                chunkType.argvalue = ChunkTypes.enumType;
 
                 //debugOut(savedData);
             }
@@ -993,7 +993,7 @@ public class Documenter {
                 if ((((sCheck.toLowerCase().contains("with sharing class ") || sCheck.toLowerCase().contains("global class ")) || (sCheck.toLowerCase().contains("public class ")
                         || sCheck.toLowerCase().contains("private class "))) || (((sCheck.toLowerCase().contains("global virtual class ") || sCheck.toLowerCase().contains("public virtual class "))
                         || (sCheck.toLowerCase().contains("private virtual class ") || sCheck.toLowerCase().contains("global abstract class "))) || (sCheck.toLowerCase().contains("public abstract class ")
-                        || sCheck.toLowerCase().contains("private abstract class ")))) && (!ChunkTypes.ctComment.equals(chunkType))) {
+                        || sCheck.toLowerCase().contains("private abstract class ")))) && (!ChunkTypes.comment.equals(chunkType))) {
                     RefObject<String> tempRef_sChunk = new RefObject<>(nextChunk);
                     String className = extractText(tempRef_sChunk, nextChunk.indexOf("{") + 1).trim();
                     nextChunk = tempRef_sChunk.argvalue;
@@ -1002,7 +1002,7 @@ public class Documenter {
                         nextChunk = nextChunk.substring(0, nextChunk.length() - 1);
                     }
                     //Output/save the class itself
-                    outputChunk(ChunkTypes.ctClass, className, parentClass, filename);
+                    outputChunk(ChunkTypes.classType, className, parentClass, filename);
 
                     //Strip out the class name so that we can prepend it onto any subclasses
                     String str4 = className.substring(className.toUpperCase().indexOf("CLASS ") + 6).trim();
@@ -1038,7 +1038,7 @@ public class Documenter {
         if (!"".equals(chunk.trim())) {
             String str;
 
-            if (((chunkType.equals(ChunkTypes.ctComment)) || (chunkType.equals(ChunkTypes.ctUnknown))) || (chunkType.equals(ChunkTypes.ctTest))) {
+            if (((chunkType.equals(ChunkTypes.comment)) || (chunkType.equals(ChunkTypes.unknown))) || (chunkType.equals(ChunkTypes.test))) {
                 str = "N/A";
             } else {
                 if (chunk.toUpperCase().startsWith("STATIC ")) {
@@ -1064,49 +1064,49 @@ public class Documenter {
                 newItem.instance = 1;
 
                 switch (chunkType) {
-                    case ChunkTypes.ctClass:
+                    case ChunkTypes.classType:
                         newItem = decodeClass(newItem);
                         break;
 
-                    case ChunkTypes.ctEnum:
+                    case ChunkTypes.enumType:
                         outputChunkEnum++;
                         newItem = decodeEnum(newItem);
                         break;
 
-                    case ChunkTypes.ctVariable:
+                    case ChunkTypes.variable:
                         newItem = decodeVar(newItem);
                         break;
 
-                    case ChunkTypes.ctMethod:
+                    case ChunkTypes.method:
                         newItem = decodeMethod(newItem);
                         break;
 
-                    case ChunkTypes.ctWebServices:
+                    case ChunkTypes.webServices:
                         newItem = decodeMethod(newItem);
                         break;
 
-                    case ChunkTypes.ctUnknown:
+                    case ChunkTypes.unknown:
                         newItem = decodeUnknown(newItem);
                         break;
 
-                    case ChunkTypes.ctComment:
+                    case ChunkTypes.comment:
                         newItem = decodeComment(newItem);
                         break;
 
-                    case ChunkTypes.ctProperty:
+                    case ChunkTypes.property:
                         outputChunkProperty++;
                         newItem = decodeProperty(newItem);
                         break;
 
-                    case ChunkTypes.ctTest:
+                    case ChunkTypes.test:
                         newItem = decodeTest(newItem);
                         break;
 
-                    case ChunkTypes.ctInterfaces:
+                    case ChunkTypes.interfaces:
                         newItem = decodeInterface(newItem);
                         break;
 
-                    case ChunkTypes.ctRemoteAction:
+                    case ChunkTypes.remoteAction:
                         newItem.chunkType = "Methods";
                         newItem.remoteAction = true;
                         newItem = decodeMethod(newItem);
@@ -1781,7 +1781,7 @@ public class Documenter {
      */
     private String GenerateSnippetFilename(ItemData itemData) {
         String str = itemData.parentClass + "-" + itemData.name;
-        if ((("Methods".equals(itemData.chunkType)) || (ChunkTypes.ctTest.equals(itemData.chunkType))) || (ChunkTypes.ctWebServices.equals(itemData.chunkType))) {
+        if ((("Methods".equals(itemData.chunkType)) || (ChunkTypes.test.equals(itemData.chunkType))) || (ChunkTypes.webServices.equals(itemData.chunkType))) {
             if ("".equals(itemData.params.trim())) {
                 return (str + "0");
             }
@@ -2187,7 +2187,7 @@ public class Documenter {
         for (ItemData itemData : alItems) {
             // If this thing is a property (or a variable) *and* it's parent is the class
             // we're interested in...add it to our list of properties
-            if (((ChunkTypes.ctProperty.equals(itemData.chunkType)) || (ChunkTypes.ctVariable.equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className))) {
+            if (((ChunkTypes.property.equals(itemData.chunkType)) || (ChunkTypes.variable.equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className))) {
                 alProps.add(itemData.name + "[" + itemData.type + "]");
             }
         }
@@ -2237,7 +2237,7 @@ public class Documenter {
      * @return
      */
     private String createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
-        if (!ChunkTypes.ctInterfaces.equals(chunkType)) {
+        if (!ChunkTypes.interfaces.equals(chunkType)) {
             return "";
         }
 
@@ -2281,7 +2281,7 @@ public class Documenter {
                 for (ItemData item : alItems) {
                     if (((!item.name.toUpperCase().trim().equals(name.toUpperCase().trim()))
                             || (!item.parentClass.toUpperCase().trim().equals(parentClass.toUpperCase().trim())))
-                            || (!ChunkTypes.ctMethod.equals(item.chunkType))) {
+                            || (!ChunkTypes.method.equals(item.chunkType))) {
                         continue;
                     }
                     newValue = getChunkTypePath(item.chunkType) + name + item.instance + ".htm";
@@ -2559,19 +2559,19 @@ public class Documenter {
     private String getChunkTypePath(String chunkType) {
         String sResult = "";
 
-        if (chunkType.equals(ChunkTypes.ctClass)) {
+        if (chunkType.equals(ChunkTypes.classType)) {
             sResult = "../Types/";
         }
-        if (chunkType.equals(ChunkTypes.ctEnum)) {
+        if (chunkType.equals(ChunkTypes.enumType)) {
             sResult = "../Enums/";
         }
-        if (chunkType.equals(ChunkTypes.ctMethod)) {
+        if (chunkType.equals(ChunkTypes.method)) {
             sResult = "../Services/";
         }
-        if (chunkType.equals(ChunkTypes.ctTest)) {
+        if (chunkType.equals(ChunkTypes.test)) {
             sResult = "../Tests/";
         }
-        if (chunkType.equals(ChunkTypes.ctUnknown)) {
+        if (chunkType.equals(ChunkTypes.unknown)) {
             sResult = "../Unknown/";
         }
 
