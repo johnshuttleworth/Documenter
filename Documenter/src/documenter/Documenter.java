@@ -47,9 +47,9 @@ public class Documenter {
     
     private static final String NewLine = "\n";
 
-    private static final String AppName = "FinancialForce.com Documentation Generator";
-    private static final String AppVersion = "v12.0 (16/08/2014)";
-    private static final String AppCopyright = "FinancialForce.com © 2014";
+    private static final String appName = "FinancialForce.com Documentation Generator";
+    private static final String appVersion = "v12.0 (16/08/2014)";
+    private static final String appCopyright = "FinancialForce.com © 2014";
 
     private boolean globalAbort = false;
     private String globalAbortText = "";
@@ -103,7 +103,7 @@ public class Documenter {
         String configFilename = "C:\\Dev_GitHub\\Documenter\\src\\ConfigFilesEtc\\V12.dcf";
 
         //Output copyright info, version etc.
-        System.out.printf("%s %s\n%s\n\n", AppName, AppVersion, AppCopyright);
+        System.out.printf("%s %s\n%s\n\n", appName, appVersion, appCopyright);
 
         //Tell the user that we've started...
         System.out.printf("Generation Started: %s\n\n", new Date().toString());

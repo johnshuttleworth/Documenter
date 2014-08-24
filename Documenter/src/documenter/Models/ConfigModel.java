@@ -16,11 +16,11 @@ public class ConfigModel {
 
     public boolean IsDirty;
 
-    public List<String> AlItems = new ArrayList<String>();
+    //public List<String> AlItems = new ArrayList<String>();
     public List<String> AlHtml = new ArrayList<String>();
     public List<String> AllExcludeFiles = new ArrayList<String>();
     public List<String> SnippetsList = new ArrayList<String>();
-    public ArrayList AlItemUsage = new ArrayList();
+    //public ArrayList AlItemUsage = new ArrayList();
     //private string sFolder;
 
     public String HtmlLoopEnumTable = "";
