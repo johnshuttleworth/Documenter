@@ -519,7 +519,7 @@ public class Documenter {
         String sData = "";
         ArrayList<String> alDocPlaceholders = new ArrayList<String>();
         docTemplate = docTemplate.trim();
-        if (docTemplate != "") {
+        if (!"".equals(docTemplate)) {
                 //System.out.printf("Creating output files: %s...", sType);
 
             //Load the template data
@@ -587,7 +587,6 @@ public class Documenter {
                                 try {
                                     copyFile(path, sBackupFile);
                                 } catch (IOException e) {
-                                    e.printStackTrace();
                                 }
                             }
 
@@ -655,20 +654,15 @@ public class Documenter {
 
 //                        StatusMsg = "Generating:";
                     if (createFiles) {
-                            //Yes - Create the file (and create an entry in the TOC if we have to)
+                        //Yes - Create the file (and create an entry in the TOC if we have to)
                         //We have the data for this file...so save it
-                        BufferedWriter writer = null;
+
                         try {
-                             // This is for debugging
-//                if ((itemData.sChunkType == docType) && docType == ctEnum) {
-//                    debugOut("Enum writing:  " + path);
-//                }
-                            writer = new BufferedWriter(new FileWriter(path));
+                            BufferedWriter writer = new BufferedWriter(new FileWriter(path));
                             writer.write(sName);
                             writer.flush();
                             writer.close();
                         } catch (IOException e) {
-                            e.printStackTrace();
                         }
 
                         if (configModel.Toc != 0) {
@@ -698,7 +692,6 @@ public class Documenter {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
@@ -739,7 +732,6 @@ public class Documenter {
                 writer.flush();
             }
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
