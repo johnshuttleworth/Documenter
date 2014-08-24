@@ -471,13 +471,13 @@ public class Documenter {
             CreateDocs(outputFolder + InterfacesFolder, outputFolder, ChunkTypes.interfaces, configModel.InterfaceTemplateFolder, tocList, true);
         }
         if (configModel.IncludeClasses) {
-            CreateDocs("", outputFolder, ChunkTypes.classType, configModel.ClassTemplateFolder, tocList, false);
+            CreateDocs("", outputFolder, ChunkTypes.classChunk, configModel.ClassTemplateFolder, tocList, false);
         }
         if (configModel.IncludeClasses) {
-            CreateDocs(outputFolder + TypesFolder, outputFolder, ChunkTypes.classType, configModel.ClassTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + TypesFolder, outputFolder, ChunkTypes.classChunk, configModel.ClassTemplateFolder, tocList, true);
         }
         if (configModel.IncludeEnums) {
-            CreateDocs(outputFolder + EnumsFolder, outputFolder, ChunkTypes.enumType, configModel.EnumTemplateFolder, tocList, true);
+            CreateDocs(outputFolder + EnumsFolder, outputFolder, ChunkTypes.enumChunk, configModel.EnumTemplateFolder, tocList, true);
         }
         if ((configModel.Toc == 1) || (configModel.Toc == 3)) {
             GenerateHtmltoc(tocList, String.format("%s%s", outputFolder, IndexFolder));
@@ -550,12 +550,12 @@ public class Documenter {
                 }
 
                 // This is for debugging
-                if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ChunkTypes.enumType == null : docType.equals(ChunkTypes.enumType))) {
+                if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ChunkTypes.enumChunk == null : docType.equals(ChunkTypes.enumChunk))) {
                     createDocsEnums++;
                 }
 
                 if (((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType))
-                        && (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ChunkTypes.classType))))
+                        && (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ChunkTypes.classChunk))))
                         && (((!itemData.chunkType.equals(ChunkTypes.method)) || (itemData.methodType != 1)) || !configModel.SkipConstructor)) {
 
                     //Are we creating files?
@@ -852,7 +852,7 @@ public class Documenter {
                     if ((iBracket < iBrace) && (iBracket != -1)) {
                         chunkType.argvalue = ChunkTypes.method;
                     } else {
-                        chunkType.argvalue = ChunkTypes.classType;
+                        chunkType.argvalue = ChunkTypes.classChunk;
                     }
                 } else {
                     //No - Simple variable
@@ -864,7 +864,7 @@ public class Documenter {
                 if ((iBrace < iBracket) && (iBrace != -1)) {
                     //Yes - Enumeration
                     iChunkEnd = 1;
-                    chunkType.argvalue = ChunkTypes.enumType;
+                    chunkType.argvalue = ChunkTypes.enumChunk;
                 } else {
                     //Regular bracket before brace bracket?
                     if ((iBracket < iBrace) && (iBracket != -1)) {
@@ -893,7 +893,7 @@ public class Documenter {
                     && (data.argvalue.toLowerCase().contains("class"))) {
                 //Yes - Read to the end of it
                 iChunkEnd = 2;
-                chunkType.argvalue = ChunkTypes.classType + "3";
+                chunkType.argvalue = ChunkTypes.classChunk + "3";
             }
 
             if (check.equals("@REMOTEACTION")) {
@@ -946,9 +946,9 @@ public class Documenter {
             }
 
             //Check to see if this thing is an enum...and set it as such (if it is)
-            if ((chunkType.argvalue.equals(ChunkTypes.classType))
+            if ((chunkType.argvalue.equals(ChunkTypes.classChunk))
                     && (!result.contains(";") && (result.toLowerCase().contains(" enum ")))) {
-                chunkType.argvalue = ChunkTypes.enumType;
+                chunkType.argvalue = ChunkTypes.enumChunk;
 
                 //debugOut(savedData);
             }
@@ -1002,7 +1002,7 @@ public class Documenter {
                         nextChunk = nextChunk.substring(0, nextChunk.length() - 1);
                     }
                     //Output/save the class itself
-                    outputChunk(ChunkTypes.classType, className, parentClass, filename);
+                    outputChunk(ChunkTypes.classChunk, className, parentClass, filename);
 
                     //Strip out the class name so that we can prepend it onto any subclasses
                     String str4 = className.substring(className.toUpperCase().indexOf("CLASS ") + 6).trim();
@@ -1064,11 +1064,11 @@ public class Documenter {
                 newItem.instance = 1;
 
                 switch (chunkType) {
-                    case ChunkTypes.classType:
+                    case ChunkTypes.classChunk:
                         newItem = decodeClass(newItem);
                         break;
 
-                    case ChunkTypes.enumType:
+                    case ChunkTypes.enumChunk:
                         outputChunkEnum++;
                         newItem = decodeEnum(newItem);
                         break;
@@ -2559,10 +2559,10 @@ public class Documenter {
     private String getChunkTypePath(String chunkType) {
         String sResult = "";
 
-        if (chunkType.equals(ChunkTypes.classType)) {
+        if (chunkType.equals(ChunkTypes.classChunk)) {
             sResult = "../Types/";
         }
-        if (chunkType.equals(ChunkTypes.enumType)) {
+        if (chunkType.equals(ChunkTypes.enumChunk)) {
             sResult = "../Enums/";
         }
         if (chunkType.equals(ChunkTypes.method)) {

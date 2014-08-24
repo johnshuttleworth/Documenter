@@ -17,8 +17,8 @@ public class ChunkTypes {
     public static final String method = "Methods";
     public static final String webServices = "Web Services";
     public static final String interfaces = "Interfaces";
-    public static final String classType = "Classes/Types";
-    public static final String enumType = "Enumerations";
+    public static final String classChunk = "Classes/Types";
+    public static final String enumChunk = "Enumerations";
     public static final String comment = "Comment";
     public static final String property = "Property";
     public static final String remoteAction = "RemoteAction";
