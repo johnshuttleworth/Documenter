@@ -11,21 +11,21 @@ package documenter.Classes;
  */
 public class ItemData {
 
-    public boolean RemoteAction;
-    public int iInstance = 1;
+    public boolean remoteAction;
+    public int instance = 1;
 
-    public Integer MethodType = -1;
-    public String sChunkData = "";
-    public String sChunkType = "";
-    public String sExtends = "";
-    public String sName = "";
-    public String sOutputFile = "";
-    public String sParams = "";
-    public String sParentClass = "";
-    public String sSourceFile = "";
-    public String sType = "";
-    public String sValues = "";
-    public String sVisibility = "";
+    public Integer methodType = -1;
+    public String chunkData = "";
+    public String chunkType = "";
+    public String extendsClass = "";
+    public String name = "";
+    public String outputFile = "";
+    public String params = "";
+    public String parentClass = "";
+    public String sourceFile = "";
+    public String type = "";
+    public String values = "";
+    public String visibility = "";
 
-    public boolean bConstructor = false;
+    public boolean constructor = false;
 }
