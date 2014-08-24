@@ -86,8 +86,9 @@ public class Documenter {
     private static final String DefFileExt = ".htm";
 
     /**
-     Routine: Main
-     @param args the command line arguments
+     * Routine: Main
+     *
+     * @param args the command line arguments
      */
     public static void main(String[] args) {
         Documenter ceEngine = new Documenter();
@@ -171,10 +172,9 @@ public class Documenter {
     // Scan for the file that we are interested in and select the latest versions 
     //
     //**************************************************************************
-    
     /**
-     * 
-     * @return 
+     *
+     * @return
      */
     private List<FilenameVersionFf> scanFiles() {
         Integer totalFiles = 0;
@@ -246,8 +246,8 @@ public class Documenter {
     }
 
     /**
-     * 
-     * @param latestVersionFileList 
+     *
+     * @param latestVersionFileList
      */
     private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList) {
         Integer totalFiles = 0;
@@ -274,8 +274,10 @@ public class Documenter {
     }
 
     /**
-     * Scan for the file that we are interested in and select the latest versions 
-     * @param filename 
+     * Scan for the file that we are interested in and select the latest
+     * versions
+     *
+     * @param filename
      */
     private void scanFile(String filename) {
         String fileData = "";
@@ -400,23 +402,24 @@ public class Documenter {
     }
 
     /**
-     * This routine attempts to create the output folder structure used to hold the generated files
-     * @param outputFolder 
+     * This routine attempts to create the output folder structure used to hold
+     * the generated files
+     *
+     * @param outputFolder
      */
     private void createOutputStructure(String outputFolder) {
-        
+
         outputFolder = outputFolder.trim();
 
         //Create the root output folder
-        (new File(outputFolder)).mkdir(); 
+        (new File(outputFolder)).mkdir();
 
         //Does our output folder end with a '\'?
-        if (!outputFolder.endsWith("\\")) 
-        {
+        if (!outputFolder.endsWith("\\")) {
             //Nope - Add one on
-            outputFolder += "\\"; 
+            outputFolder += "\\";
         }
-        
+
         //Create the individual item type output folders
         (new File(outputFolder + EnumsFolder)).mkdirs();
         (new File(outputFolder + InterfacesFolder)).mkdirs();
@@ -430,7 +433,7 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      */
     private void generateFiles() {
         if (alItems.isEmpty()) {
@@ -448,9 +451,10 @@ public class Documenter {
     }
 
     /**
-     * Given an output folder, this routine checks which type(s) of items we want
-     * to create documents for and then creates them
-     * @param outputFolder 
+     * Given an output folder, this routine checks which type(s) of items we
+     * want to create documents for and then creates them
+     *
+     * @param outputFolder
      */
     private void generateOutputDocs(String outputFolder) {
         ArrayList<String> tocList = new ArrayList<String>();
@@ -495,19 +499,19 @@ public class Documenter {
     }
 
     /**
-     * 
-     * When called, this routine reads in the specified template file
-     * (if it exists) and then attempts to use that file's data to
-     * create a file for each thing of the type specified (e.g. method,
-     * type). To do this it uses the placeholder in the template file
-     * to insert values from the thing into HTML text...and then saves
-     * the resultant text to an output file
+     *
+     * When called, this routine reads in the specified template file (if it
+     * exists) and then attempts to use that file's data to create a file for
+     * each thing of the type specified (e.g. method, type). To do this it uses
+     * the placeholder in the template file to insert values from the thing into
+     * HTML text...and then saves the resultant text to an output file
+     *
      * @param docPath
      * @param rootPath
      * @param docType
      * @param docTemplate
      * @param tocList
-     * @param createFiles 
+     * @param createFiles
      */
     private void CreateDocs(String docPath, String rootPath, String docType, String docTemplate, List<String> tocList, Boolean createFiles) {
         String path = "";
@@ -673,8 +677,8 @@ public class Documenter {
     }
 
     /**
-     * 
-     * @param latestVersionFileList 
+     *
+     * @param latestVersionFileList
      */
     private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
         String filesProcessedFileName = configModel.OutputFolder + "\\FilesProcessed.txt";
@@ -695,7 +699,7 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      */
     private void populateSnippetText() {
         // Add some elements to the dictionary. 
@@ -710,8 +714,8 @@ public class Documenter {
     }
 
     /**
-     * 
-     * @param message 
+     *
+     * @param message
      */
     private void debugOut(String message) {
         String debugFileName = configModel.OutputFolder + "\\Debug.txt";
@@ -742,10 +746,10 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param latestVersionFileList
      * @param filenameVersionFf
-     * @return 
+     * @return
      */
     private int getIndexOf(List<FilenameVersionFf> latestVersionFileList, FilenameVersionFf filenameVersionFf) {
         if (latestVersionFileList == null) {
@@ -762,12 +766,12 @@ public class Documenter {
     }
 
     /**
-     * Given a set of data, this routine works out the next 'chunk' 
-     * is i.e. section, structure etc, and returns it 
-     * 
+     * Given a set of data, this routine works out the next 'chunk' is i.e.
+     * section, structure etc, and returns it
+     *
      * @param data
      * @param chunkType
-     * @return 
+     * @return
      */
     private String getNextChunk(RefObject<String> data, RefObject<String> chunkType) {
         String result = "";
@@ -966,9 +970,10 @@ public class Documenter {
 
     /**
      * This routine works out the next chunk and decides what type it is
+     *
      * @param data
      * @param parentClass
-     * @param filename 
+     * @param filename
      */
     private void processChunk(String data, String parentClass, String filename) {
         processedChunks++;
@@ -1034,11 +1039,11 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param chunkType
      * @param chunk
      * @param parentClass
-     * @param filename 
+     * @param filename
      */
     private void outputChunk(String chunkType, String chunk, String parentClass, String filename) {
         outputtedChunks++;
@@ -1166,10 +1171,11 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing a class, this routine extracts 
-     * the class name and whether it extends another class
+     * Given a set of object data containing a class, this routine extracts the
+     * class name and whether it extends another class
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeClass(ItemData newItem) {
         newItem.name = extractItemName(newItem, "CLASS");
@@ -1189,10 +1195,11 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing an enumeration, this routine 
+     * Given a set of object data containing an enumeration, this routine
      * extracts the enumeration name and its values
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeEnum(ItemData newItem) {
         newItem.name = extractItemName(newItem, "ENUM");
@@ -1226,10 +1233,11 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing a variable definition, 
-     * this routine extract the variable's name and type
+     * Given a set of object data containing a variable definition, this routine
+     * extract the variable's name and type
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeVar(ItemData newItem) {
         String sData = newItem.chunkData;
@@ -1258,10 +1266,11 @@ public class Documenter {
 
     /**
      * Given a set of object data containing a method definition, this routine
-     * extracts the method name, return type, parameter list and whether 
-     * it's a constructor or not
+     * extracts the method name, return type, parameter list and whether it's a
+     * constructor or not
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeMethod(ItemData newItem) {
         String sChunkData = newItem.chunkData;
@@ -1284,20 +1293,23 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing an unknown, this routine does nothing.
+     * Given a set of object data containing an unknown, this routine does
+     * nothing.
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeUnknown(ItemData newItem) {
         return newItem;
     }
 
     /**
-     * Given a set of object data containing a set of comment data, this routine 
-     * re-formats the comment into a single line (if it spanned multiple lines) 
+     * Given a set of object data containing a set of comment data, this routine
+     * re-formats the comment into a single line (if it spanned multiple lines)
      * and extracts any 'DOC' data
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeComment(ItemData newItem) {
         int length = 0;
@@ -1334,10 +1346,11 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing a property definition, this routine 
+     * Given a set of object data containing a property definition, this routine
      * extracts the property name and type
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeProperty(ItemData newItem) {
         String sData = newItem.chunkData;
@@ -1354,10 +1367,12 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing a test method, this routine extracts 
-     * everything that it can about the test (by treating it as a regular method) 
+     * Given a set of object data containing a test method, this routine
+     * extracts everything that it can about the test (by treating it as a
+     * regular method)
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeTest(ItemData newItem) {
         newItem = decodeMethod(newItem);
@@ -1366,10 +1381,11 @@ public class Documenter {
     }
 
     /**
-     * Given a set of object data containing an interface definition, this routine 
-     * extracts the interface name and type
+     * Given a set of object data containing an interface definition, this
+     * routine extracts the interface name and type
+     *
      * @param newItem
-     * @return 
+     * @return
      */
     private ItemData decodeInterface(ItemData newItem) {
         String sChunkData = newItem.chunkData;
@@ -1383,10 +1399,10 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param data
      * @param removeComments
-     * @return 
+     * @return
      */
     private String preProcessComments(String data, boolean removeComments) {
         int startIndex;
@@ -1433,11 +1449,13 @@ public class Documenter {
     }
 
     /**
-     * Given a set of data and a piece of text to search for, this routine attempts
-     * to work out the name of the data (e.g. method name, parameter name)
+     * Given a set of data and a piece of text to search for, this routine
+     * attempts to work out the name of the data (e.g. method name, parameter
+     * name)
+     *
      * @param newItem
      * @param findText
-     * @return 
+     * @return
      */
     private String extractItemName(ItemData newItem, String findText) {
         String sData = newItem.chunkData;
@@ -1462,12 +1480,13 @@ public class Documenter {
     }
 
     /**
-     * Given a text string, this routine returns the section of text up to the 
+     * Given a text string, this routine returns the section of text up to the
      * supplied position. As well as this it also removes that section of text
      * from the original text
+     *
      * @param data
      * @param toPos
-     * @return 
+     * @return
      */
     private String extractText(RefObject<String> data, int toPos) {
         String sResult = "";
@@ -1491,10 +1510,11 @@ public class Documenter {
     }
 
     /**
-     * Given a text string (containing something like a method or list 
-     * definition) this routine works out the return type  
+     * Given a text string (containing something like a method or list
+     * definition) this routine works out the return type
+     *
      * @param data
-     * @return 
+     * @return
      */
     private String extractReturnType(String data) {
         if (data.endsWith(">")) {
@@ -1515,11 +1535,12 @@ public class Documenter {
     }
 
     /**
-     * Given a text string and a pattern to find this routine returns the 
-     * number of instances of the pattern in the text
+     * Given a text string and a pattern to find this routine returns the number
+     * of instances of the pattern in the text
+     *
      * @param text
      * @param pattern
-     * @return 
+     * @return
      */
     private int textCount(String text, String pattern) {
         int iCount = 0;
@@ -1535,11 +1556,12 @@ public class Documenter {
     }
 
     /**
-     * This routine takes the supplied text and converts any placeholder's 
+     * This routine takes the supplied text and converts any placeholder's
      * ('[%<Name>%]' to uppercase (making them easier to match in the future)
+     *
      * @param data
      * @param alDocPlaceholders
-     * @return 
+     * @return
      */
     private String FormatPlaceholders(String data, ArrayList<String> alDocPlaceholders) {
         String sPlaceholder = "";
@@ -1577,9 +1599,9 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param tocList
-     * @param outputFolder 
+     * @param outputFolder
      */
     private void GenerateHtmltoc(ArrayList<String> tocList, String outputFolder) {
         String upperCaseHeading = "";
@@ -1616,9 +1638,9 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param tocList
-     * @param outputFolder 
+     * @param outputFolder
      */
     private void GenerateFlareToc(ArrayList<String> tocList, String outputFolder) {
         String upperCaseHeading = "";
@@ -1685,7 +1707,7 @@ public class Documenter {
                         }
                     }
 
-                //fullFilename = Path.GetFileName(fullFilename).Replace(@"\", "/").trim();
+                    //fullFilename = Path.GetFileName(fullFilename).Replace(@"\", "/").trim();
                     // We need to do this to get the sub folder which is  type
                     String pattern = Pattern.quote(System.getProperty("file.separator"));
                     String[] filenameParts = fullFilename.split(pattern);
@@ -1694,7 +1716,7 @@ public class Documenter {
                     String fileName = filenameParts[filenameParts.length - 1];
 
                     String subFolderAndFilename = String.format("%s/%s", typeName, fileName);
-                //string subFolderAndFilename = fullFilename.Substring()
+                    //string subFolderAndFilename = fullFilename.Substring()
                     //fullFilename = fullFilename.Substring(folder.Length).Replace(@"\", "/").trim();
 
                     if (!configModel.IncludeTocFullNames && displayText.contains("\\.")) {
@@ -1723,11 +1745,12 @@ public class Documenter {
     }
 
     /**
-     * Given a source file and a destination file, this routine, copies from 
-     * the source file to the destination file
+     * Given a source file and a destination file, this routine, copies from the
+     * source file to the destination file
+     *
      * @param sourceFilename
      * @param destFilename
-     * @throws IOException 
+     * @throws IOException
      */
     private void copyFile(String sourceFilename, String destFilename) throws IOException {
         FileChannel source = null;
@@ -1756,13 +1779,14 @@ public class Documenter {
     }
 
     /**
-     * Given a set of delimited text, this routine converts that text into a list 
-     * and then uses it to construct a HTML table (with one item in the list having
-     * one row in the output table). The HTML used to construct the table is that 
-     * specified in the configuration file
+     * Given a set of delimited text, this routine converts that text into a
+     * list and then uses it to construct a HTML table (with one item in the
+     * list having one row in the output table). The HTML used to construct the
+     * table is that specified in the configuration file
+     *
      * @param outputMethodName
      * @param data
-     * @return 
+     * @return
      */
     private String CreateValuesTable(String outputMethodName, String data) {
         String[] strArray = data.split("\\,");
@@ -1781,13 +1805,13 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param itemData
-     * @return 
+     * @return
      */
     private String GenerateSnippetFilename(ItemData itemData) {
         String str = itemData.parentClass + "-" + itemData.name;
-        if ((("Methods".equals(itemData.chunkType)) || ("Tests".equals(itemData.chunkType))) || ("Web Services".equals(itemData.chunkType))) {
+        if ((("Methods".equals(itemData.chunkType)) || (ctTest.equals(itemData.chunkType))) || (ctWebServices.equals(itemData.chunkType))) {
             if ("".equals(itemData.params.trim())) {
                 return (str + "0");
             }
@@ -1823,10 +1847,11 @@ public class Documenter {
 
     /**
      * By using this method it aids porting between languages.
+     *
      * @param data
      * @param toFind
      * @param offset
-     * @return 
+     * @return
      */
     private static String extractSubString(String data, String toFind, int offset) {
         return data.substring(data.indexOf(toFind) + offset).trim();
@@ -1834,11 +1859,12 @@ public class Documenter {
 
     /**
      * By using this method it aids porting between languages.
+     *
      * @param startIndex
      * @param data
      * @param toFind
      * @param offSet
-     * @return 
+     * @return
      */
     private static String extractSubString(int startIndex, String data, String toFind, int offSet) {
         return data.substring(startIndex, data.indexOf(toFind) + offSet).trim();
@@ -1846,8 +1872,9 @@ public class Documenter {
 
     /**
      * Given a date, this routine formats it as HH:mm:ss format
+     *
      * @param date
-     * @return 
+     * @return
      */
     private String DateToShortTimeString(java.util.Date date) {
         Format formatter = new SimpleDateFormat("HH:mm:ss");
@@ -1856,8 +1883,9 @@ public class Documenter {
 
     /**
      * Given a date, this routine formats it in yyyy-MM-dd format
+     *
      * @param date
-     * @return 
+     * @return
      */
     private String DateToShortDateString(java.util.Date date) {
         Format formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -1866,8 +1894,9 @@ public class Documenter {
 
     /**
      * Given a date, this routine formats it in dd/MM/yyyy HH:mm:ss format
+     *
      * @param date
-     * @return 
+     * @return
      */
     private String DateToShortDateTimeString(java.util.Date date) {
         Format formatter = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
@@ -1875,8 +1904,10 @@ public class Documenter {
     }
 
     /**
-     * Class used to simulate the ability to pass arguments by reference in Java.
-     * @param <T> 
+     * Class used to simulate the ability to pass arguments by reference in
+     * Java.
+     *
+     * @param <T>
      */
     private final class RefObject<T> {
 
@@ -1888,7 +1919,7 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      */
     private class FilenameFilterImpl implements FilenameFilter {
 
@@ -1904,8 +1935,9 @@ public class Documenter {
     }
 
     /**
-     * Given a set of data, this routine builds an output HTML structure 
+     * Given a set of data, this routine builds an output HTML structure
      * detailing the parameters, types, hyperlinks (where necessary) etc.
+     *
      * @param outputMethodName
      * @param usedByName
      * @param usedByInstance
@@ -1915,7 +1947,7 @@ public class Documenter {
      * @param lineEnd
      * @param lineStart
      * @param table
-     * @return 
+     * @return
      */
     private String createParamsData(String outputMethodName, String usedByName, int usedByInstance, String usedByChunkType, String data, String parentClass, String lineEnd, String lineStart, Boolean table) {
         Boolean flag = false;
@@ -2050,12 +2082,13 @@ public class Documenter {
     }
 
     /**
-     * Given a name, chunk type and instance, this routine builds a hyperlink 
-     * to the corresponding help file
+     * Given a name, chunk type and instance, this routine builds a hyperlink to
+     * the corresponding help file
+     *
      * @param sName
      * @param sChunkType
      * @param iInstance
-     * @return 
+     * @return
      */
     private String buildUsedByLink(String sName, String sChunkType, int iInstance) {
         String sLink = sName.trim();
@@ -2070,7 +2103,7 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param methodType
      * @param usedByName
      * @param usedByInstance
@@ -2078,7 +2111,7 @@ public class Documenter {
      * @param returnType
      * @param parentClass
      * @param asText
-     * @return 
+     * @return
      */
     private String buildReturnLink(Integer methodType, String usedByName, int usedByInstance, String usedByChunkType, String returnType, String parentClass, boolean asText) {
         String data;
@@ -2110,10 +2143,12 @@ public class Documenter {
     }
 
     /**
-     * When called, this routine takes the supplied name and builds a 'Used By...' HTML structure
+     * When called, this routine takes the supplied name and builds a 'Used
+     * By...' HTML structure
+     *
      * @param className
      * @param parentClass
-     * @return 
+     * @return
      */
     private String createUsageList(String className, String parentClass) {
         String sHtmlPreMethodList = "";
@@ -2154,16 +2189,18 @@ public class Documenter {
         }
         return (sHtmlPreMethodList + configModel.HtmlPostMethodList);
     }
-    
+
     /**
-     * Given a set of class data, this routine creates a HTML table containing all of the properties for that class (formatted as per the config file)
+     * Given a set of class data, this routine creates a HTML table containing
+     * all of the properties for that class (formatted as per the config file)
+     *
      * @param outputMethodName
      * @param className
      * @param parentClass
      * @param extendsClass
      * @param itemChunkType
      * @param instance
-     * @return 
+     * @return
      */
     private String createPropertyList(String outputMethodName, String className, String parentClass, String extendsClass, String itemChunkType, int instance) {
         String sResult = "";
@@ -2178,7 +2215,7 @@ public class Documenter {
 
         // Build the list of properties for this class
         for (ItemData itemData : alItems) {
-                // If this thing is a property (or a variable) *and* it's parent is the class
+            // If this thing is a property (or a variable) *and* it's parent is the class
             // we're interested in...add it to our list of properties
             if ((("Property".equals(itemData.chunkType)) || ("Variables".equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className))) {
                 alProps.add(itemData.name + "[" + itemData.type + "]");
@@ -2221,16 +2258,16 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param className
      * @param instance
      * @param chunkType
      * @param interfaceData
      * @param parentClass
-     * @return 
+     * @return
      */
     private String createInterfaceList(String className, int instance, String chunkType, String interfaceData, String parentClass) {
-        if (!"Interfaces".equals(chunkType)) {
+        if (!ctInterfaces.equals(chunkType)) {
             return "";
         }
 
@@ -2274,7 +2311,7 @@ public class Documenter {
                 for (ItemData item : alItems) {
                     if (((!item.name.toUpperCase().trim().equals(name.toUpperCase().trim()))
                             || (!item.parentClass.toUpperCase().trim().equals(parentClass.toUpperCase().trim())))
-                            || (!"Methods".equals(item.chunkType))) {
+                            || (!ctMethod.equals(item.chunkType))) {
                         continue;
                     }
                     newValue = getChunkTypePath(item.chunkType) + name + item.instance + ".htm";
@@ -2289,14 +2326,14 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param outputName
      * @param paramItems
      * @param snippetDescr
      * @param snippetExample
      * @param snippetInput
      * @param snippetOutput
-     * @param snippetMarker 
+     * @param snippetMarker
      */
     private void createSnippetFiles(String outputName, List<String> paramItems, boolean snippetDescr, boolean snippetExample, boolean snippetInput, boolean snippetOutput, String snippetMarker) {
         String str = outputName.substring(0, outputName.lastIndexOf("\\"));
@@ -2346,9 +2383,9 @@ public class Documenter {
     }
 
     /**
-     * 
+     *
      * @param filename
-     * @param snippetMarker 
+     * @param snippetMarker
      */
     private void createSnippetFile(String filename, String snippetMarker) {
         createdSnippetFiles++;
@@ -2379,13 +2416,14 @@ public class Documenter {
     }
 
     /**
-     * Called when we need to store that a type is being used/referenced somewhere 
-     * in the system, this routine stores the details so that we can build the 
-     * 'Used By...' output
+     * Called when we need to store that a type is being used/referenced
+     * somewhere in the system, this routine stores the details so that we can
+     * build the 'Used By...' output
+     *
      * @param itemName
      * @param filename
      * @param usedByName
-     * @param usedByType 
+     * @param usedByType
      */
     private void storeTypeLink(String itemName, String filename, String usedByName, String usedByType) {
         boolean bFound = false;
@@ -2433,13 +2471,15 @@ public class Documenter {
     }
 
     /**
-     * Given a set of data about a type, this routine bundles/formats the type 
-     * so that, if necessary, it includes a hyperlink to the documentation for the type
+     * Given a set of data about a type, this routine bundles/formats the type
+     * so that, if necessary, it includes a hyperlink to the documentation for
+     * the type
+     *
      * @param type
      * @param parentClass
      * @param asItalic
      * @param asText
-     * @return 
+     * @return
      */
     private String buildTypeLink(String type, String parentClass, boolean asItalic, boolean asText) {
         String sResult = "";
@@ -2544,9 +2584,11 @@ public class Documenter {
     }
 
     /**
-     * Given a chunk type, this routine works out which output path corresponds to it
+     * Given a chunk type, this routine works out which output path corresponds
+     * to it
+     *
      * @param chunkType
-     * @return 
+     * @return
      */
     private String getChunkTypePath(String chunkType) {
         String sResult = "";
@@ -2572,8 +2614,9 @@ public class Documenter {
 
     /**
      * Tests for a vowel
+     *
      * @param sData
-     * @return 
+     * @return
      */
     private Boolean isVowel(String sData) {
         sData = sData.toUpperCase().trim();
