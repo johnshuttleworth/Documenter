@@ -1085,8 +1085,6 @@ public class Documenter {
                     newItem.sSourceFile = sFilename;
                     newItem.iInstance = 1;
 
-if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebServices))
-    debugOut("");
                     switch (sChunkType)
                     {
                         case ctClass:
@@ -1638,6 +1636,12 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
         }
     }
 
+    //**************************************************************************
+    // Method: GenerateFlareToc
+    // 
+    // 
+    // 
+    //**************************************************************************
     private void GenerateFlareToc(ArrayList<String> tocList, String outputFolder) {
         String upperCaseHeading = "";
             String tempSource = "";
@@ -1939,6 +1943,9 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
         //Build the list of parameters
         List<String> list2 = new ArrayList<String>();
 
+//        if(outputMethodName.contains("GetInvoice"))
+//            debugOut("DEBUG: " + outputMethodName);
+            
         //Strip out any '/*...*/' comments (it's easier to do here than later on)
         while (data.contains("/*") && !bError) {
             String sComment = data.substring(data.indexOf("/*"));
@@ -1980,7 +1987,8 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
                     break;
             }
             // NOT SURE ABOUT THIS
-            sParam += data.charAt(iCount);
+            if(data.charAt(iCount) != ',')
+                sParam += data.charAt(iCount);
         }
         if (sParam.trim() != "") {
             list2.add(sParam);
@@ -2071,6 +2079,11 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
         return sLink;
     }
     
+    //**************************************************************************
+    // Method: buildReturnLink
+    // 
+    //
+    //**************************************************************************
     private String buildReturnLink(Integer methodType, String usedByName, int usedByInstance, String usedByChunkType, String returnType, String parentClass, boolean asText) {
         String data;
 
@@ -2085,16 +2098,19 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
             }
             if (asText)
             {
+//                if(usedByName.contains("CODAAPISalesInvoice_10_0.PostIncomeSchedules"))
+//                    debugOut("QWERTY: ");
+                
                 data = buildTypeLink(returnType, parentClass, false, true);
                 if (("VOID".equals(data.toUpperCase().trim())) || ("".equals(data.trim())))
                 {
-                    return String.format("This {0} does not return a value.", methodTypeTxt);
+                    return String.format("This %s does not return a value.", methodTypeTxt);
                 }
                 if (isVowel(data))
                 {
-                    return String.format("This {0} returns an {1}.", methodTypeTxt, data);
+                    return String.format("This %s returns an %s.", methodTypeTxt, data);
                 }
-                return String.format("This {0} returns a {1}.", methodTypeTxt, data);
+                return String.format("This %s returns a %s.", methodTypeTxt, data);
             }
 
             data = buildTypeLink(returnType, parentClass, true, false);
@@ -2427,7 +2443,7 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
         String sResult = "";
         String sPrepend = "";
         String sAppend = "";
-        String sFindType = "";
+        String sFindName = "";
         String sFindClass = "";
         String sPath = "";
         String sLink = "";
@@ -2460,9 +2476,9 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
         if (sType.contains(".")) //Is the type within another class?
         {										//Yes - Extract *only* the type 
             sFindClass = sType.substring(0, sType.lastIndexOf(".")).trim();
-            sFindType = sType.substring(sType.lastIndexOf(".") + 1).trim();
+            sFindName = sType.substring(sType.lastIndexOf(".") + 1).trim();
         } else {										//No - Use the whole text as the type
-            sFindType = sType;
+            sFindName = sType;
             sFindClass = sParentClass;
         }
 
@@ -2471,39 +2487,50 @@ if(sFilename.equals("CODAAPIBankStatement_6_0.cls") && sChunkType.equals(ctWebSe
             objItem = (ItemData) alItems.toArray()[iCount];
 
             //If this is the correct type...
-            if ((objItem.sName.toUpperCase().trim().equals(sFindType.toUpperCase().trim()))
+            if ((objItem.sName.toUpperCase().trim().equals(sFindName.toUpperCase().trim()))
                     && (objItem.sParentClass.toUpperCase().trim().equals(sFindClass.toUpperCase().trim()))) {
                 //...store the hyperlink to it
                 sPath = getChunkTypePath(objItem.sChunkType);
 
-                sLink = sPath + sFindType + Integer.toString(objItem.iInstance) + DefFileExt;
+                sLink = sPath + sFindName + Integer.toString(objItem.iInstance) + DefFileExt;
 
                 break;
             }
         }
 
-        if (!sLink.trim().equals("")) //If we have a link, create the HTML...
+         //If we have a link, create the HTML...
+        if (!sLink.trim().equals(""))
         {
-            sResult = "<a href=\"" + sLink + "\">" + configModel.Namespace + sFindClass + "." + sFindType + "</a>";
+            sResult = "<a href=\"" + sLink + "\">" + configModel.Namespace + sFindClass + "." + sFindName + "</a>";
         } else {
-            sResult = sType; 			//...otherwise use the *original* type data (as it'll contain any prefix text)
+            //...otherwise use the *original* type data (as it'll contain any prefix text)
+            sResult = sType;
         }
-        if (bAsText) //Are we outputting the results as text?
-        { 					//Yes - Build up the type as a more 'text like' string
-            if (sPrepend.trim().equals("")) //Do we have anything to add onto the start of the results (e.g. 'List<')?
-            { 									//No - Just add on 'object' (e.g. 'MyType object')
-                if (!sResult.trim().equals("")) //Do we have any result data?
+        
+        //Are we outputting the results as text?
+        if (bAsText) 
+        { 					
+            //Yes - Build up the type as a more 'text like' string
+            //Do we have anything to add onto the start of the results (e.g. 'List<')?
+            if (sPrepend.trim().equals("")) 
+            {					
+                //No - Just add on 'object' (e.g. 'MyType object')
+                if (!sResult.trim().equals(""))
                 {
-                    sResult = sResult + " object"; 		//Yes - Just add 'object' to the end
+                    if (!"void".equals(sResult.toLowerCase().trim()))
+                    {
+                        sResult = sResult + " object";
+                    }
                 } else {
-                    sResult = ""; 						//No...err return nothing
+                    sResult = "";
                 }
-            } else { 									//Yes - Add on the leading text and a trailing '>'
+            } else {
+                //Yes - Add on the leading text and a trailing '>'
                 sPrepend = sPrepend.replace("&lt;", "");
                 sResult = sPrepend.toLowerCase().trim() + " of " + sResult + " objects";
             }
-        } else //No - Just add on any leading and trailing data that we extracted
-        {
+        } else {
+            //No - Just add on any leading and trailing data that we extracted
             sResult = sPrepend + sResult + sAppend;
         }
 
