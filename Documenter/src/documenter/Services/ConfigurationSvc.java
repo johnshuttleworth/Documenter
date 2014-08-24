@@ -10,7 +10,6 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  *
@@ -38,8 +37,7 @@ public class ConfigurationSvc {
         System.out.printf("Loading Configuration (%s)...", filename);
 
         //Do we have a config file?
-        if (filename.trim().equals(""))
-        {
+        if (filename.trim().equals("")) {
             System.out.println("Abort");
 
             //Set the *global* abort...
@@ -53,33 +51,26 @@ public class ConfigurationSvc {
         try {
             inConfig = new BufferedReader(new FileReader(filename));
 
-            String readData = "";
-            int numLines = 0;
-            String value = "";
-            String sTag = "";
-        
-            String sCount = "";
-            
+            String readData;
+
             while ((readData = inConfig.readLine()) != null) {
                 String[] strExcludeArray;
                 //Is the read line in the form <Tag>=<Value>?
-                if (readData.contains("="))
-                {
+                if (readData.contains("=")) {
                     //Yes - We can process it then
                     //Split the data into <tag> and <Value>
-                    sTag = readData.substring(0, readData.indexOf("=")).toUpperCase().trim();
-                    value = readData.substring(readData.indexOf("=") + 1);
+                    String sTag = readData.substring(0, readData.indexOf("=")).toUpperCase().trim();
+                    String value = readData.substring(readData.indexOf("=") + 1);
 
                     //Does the tag contain a 'multi-line' value?
-                    if (sTag.contains("["))
-                    {
+                    if (sTag.contains("[")) {
                         //Yes - Read in the multiple lines
-                        sCount = sTag.substring(sTag.indexOf("[")).trim();
+                        String sCount = sTag.substring(sTag.indexOf("[")).trim();
                         sTag = sTag.substring(0, sTag.indexOf("[")).trim();
 
                         sCount = sCount.replace("[", "").replace("]", "").trim();
 
-                        numLines = Integer.parseInt(sCount);
+                        int numLines = Integer.parseInt(sCount);
 
                         for (int iCount = 1; iCount < numLines; iCount++) {
                             value = value + newLine + inConfig.readLine();
@@ -283,7 +274,7 @@ public class ConfigurationSvc {
                         }
                         case "HTMLPOSTINTERFACES": {
                             Configuration.HtmlPostInterfaces = value;
-                            continue;
+                            //continue;
                         }
                     }
                 }
@@ -339,7 +330,7 @@ public class ConfigurationSvc {
             Configuration.AlHtml.add(Configuration.HtmlLoopInterfaces);
             Configuration.AlHtml.add(Configuration.HtmlPostInterfaces);
         }
- //           reader.Close();
+        //           reader.Close();
 
         return Configuration;
     }
@@ -347,8 +338,8 @@ public class ConfigurationSvc {
         //public static void Save(ConfigModel configModel)
     //{
     //string filename = string.Format(@"{0}\{1}_{2}.dcf", Path.GetDirectoryName(ConfigFilename), Path.GetFileNameWithoutExtension(ConfigFilename), DateTime.Now.ToString("ddMMyyyy_HHmmss"));
-          //  SaveData(ConfigFilename, configModel);
-            //HasChanged = true;
+    //  SaveData(ConfigFilename, configModel);
+    //HasChanged = true;
     //string str = "";
     //var dlg = new SaveFileDialog();
     //try
@@ -357,7 +348,7 @@ public class ConfigurationSvc {
     //    if (dlg.ShowDialog() == true)
     //    {
     //        //ConfigurationFilename = dlg.FileName;
-            //        string filename = string.Format(@"C:\Documenter\Templates\Test\{0}_{1}.dcf", Path.GetFileNameWithoutExtension(ConfigFilename), DateTime.Now.ToString("ddMMyyyy_HHmmss"));
+    //        string filename = string.Format(@"C:\Documenter\Templates\Test\{0}_{1}.dcf", Path.GetFileNameWithoutExtension(ConfigFilename), DateTime.Now.ToString("ddMMyyyy_HHmmss"));
     //        var sw = new StreamWriter(filename);
     //        sw.WriteLine("TemplateUnknown=" + confimodel.UnknownTemplateFolder);
     //        sw.WriteLine("TemplateTest=" + confimodel.TestTemplateFolder);
@@ -380,10 +371,10 @@ public class ConfigurationSvc {
     //        sw.WriteLine("TOC=" + confimodel.Toc.ToString(CultureInfo.InvariantCulture));
     //        sw.WriteLine("TOCFullNames=" + BoolToStr(confimodel.bTOCFullNames));
     //        GenerateSaveScript(sw, "TOCPreNodes", confimodel.sTOCPreNodes);
-            //        if (string.IsNullOrEmpty(confimodel.sTOCPostNodes))
+    //        if (string.IsNullOrEmpty(confimodel.sTOCPostNodes))
     //            confimodel.sTOCPostNodes = "JOHN";
     //        GenerateSaveScript(sw, "TOCPostNode", confimodel.sTOCPostNodes);
-            //        sw.WriteLine("SkipRoot=" + BoolToStr(confimodel.SkipRootClasses));
+    //        sw.WriteLine("SkipRoot=" + BoolToStr(confimodel.SkipRootClasses));
     //        sw.WriteLine("SkipConstructors=" + BoolToStr(confimodel.SkipConstructor));
     //        sw.WriteLine("ScopeGlobal=" + BoolToStr(confimodel.ShowGlobal));
     //        sw.WriteLine("ScopeWebService=" + BoolToStr(confimodel.ShowWebService));
@@ -423,7 +414,7 @@ public class ConfigurationSvc {
     //        //    this.Text = "FinancialForce.com Documentation Generator";
     //        //}
     //        IsDirty = false;
-            //    }
+    //    }
     //}
     //catch (Exception ex)
     //{
@@ -434,7 +425,7 @@ public class ConfigurationSvc {
     //    //((IDisposable)dlg).Dispose();
     //}
     //}
-        //public static void SaveAs(string filename, ConfigModel configModel)
+    //public static void SaveAs(string filename, ConfigModel configModel)
     //{
     //var dlg = new SaveFileDialog();
     //try
@@ -443,7 +434,7 @@ public class ConfigurationSvc {
     //    if (dlg.ShowDialog() == true)
     //    {
     //        SaveData(filename, configModel);
-            //        IsDirty = false;
+    //        IsDirty = false;
     //        HasChanged = true;
     //    }
     //}
@@ -546,7 +537,7 @@ public class ConfigurationSvc {
 //                }
 //            }
 //        }
-        /// <summary>
+    /// <summary>
     /// Bools to string.
     /// </summary>
     /// <param name="value">if set to <c>true</c> [value].</param>

@@ -5,6 +5,7 @@
  */
 package documenter;
 
+import documenter.Classes.ChunkTypes;
 import documenter.Classes.FilenameVersionFf;
 import documenter.Classes.ItemData;
 import documenter.Classes.ItemUsage;
@@ -59,7 +60,7 @@ public class Documenter {
     private final java.util.ArrayList<ItemUsage> alItemUsage = new java.util.ArrayList<>();
     private final Map<String, String> snippetText = new HashMap<>();
 
-    private static final String ctVar = "Variables";
+    //private static final String ctVar = "Variables";
     private static final String ctUnknown = "Unknown";
     private static final String ctTest = "Tests";
     private static final String ctMethod = "Methods";
@@ -457,7 +458,7 @@ public class Documenter {
      * @param outputFolder
      */
     private void generateOutputDocs(String outputFolder) {
-        ArrayList<String> tocList = new ArrayList<String>();
+        ArrayList<String> tocList = new ArrayList<>();
 
         if (!outputFolder.endsWith("\\")) //Does our output folder end with a '\'?
         {
@@ -516,7 +517,7 @@ public class Documenter {
     private void CreateDocs(String docPath, String rootPath, String docType, String docTemplate, List<String> tocList, Boolean createFiles) {
         String path = "";
         String sData = "";
-        ArrayList<String> alDocPlaceholders = new ArrayList<String>();
+        ArrayList<String> alDocPlaceholders = new ArrayList<>();
         docTemplate = docTemplate.trim();
         if (!"".equals(docTemplate)) {
                 //System.out.printf("Creating output files: %s...", sType);
@@ -651,16 +652,15 @@ public class Documenter {
                         sName = sName.replace(sPlaceholder, newValue);
                     }
 
-//                        StatusMsg = "Generating:";
                     if (createFiles) {
                         //Yes - Create the file (and create an entry in the TOC if we have to)
                         //We have the data for this file...so save it
 
                         try {
-                            BufferedWriter writer = new BufferedWriter(new FileWriter(path));
-                            writer.write(sName);
-                            writer.flush();
-                            writer.close();
+                            try (BufferedWriter writer = new BufferedWriter(new FileWriter(path))) {
+                                writer.write(sName);
+                                writer.flush();
+                            }
                         } catch (IOException e) {
                         }
 
@@ -786,7 +786,7 @@ public class Documenter {
         //Does the data start with a '//' (i.e. is this a comment)?
         if (data.argvalue.startsWith("//")) {
             //Yes - Extract the comment, set the return type...and get out
-            if (data.argvalue.indexOf("\n") >= 0) {
+            if (data.argvalue.contains("\n")) {
                 result = extractText(data, data.argvalue.indexOf("\n"));
             } else {
                 result = data.argvalue;
@@ -807,7 +807,7 @@ public class Documenter {
 
         String start;
         //Does this data have a space in it?
-        if (data.argvalue.indexOf(" ") >= 0) {
+        if (data.argvalue.contains(" ")) {
             //Yes - Extract the first 'word'
             start = extractText(data, data.argvalue.indexOf(" "));
         } else {
@@ -869,7 +869,7 @@ public class Documenter {
                 } else {
                     //No - Simple variable
                     iChunkEnd = 0;
-                    chunkType.argvalue = ctVar;
+                    chunkType.argvalue = ChunkTypes.ctVariable;
                 }
             } else {
                 //Brace bracket before regular bracket?
@@ -892,7 +892,7 @@ public class Documenter {
                             //No brace, no bracket and no equals?
                             if ((iBrace == -1) && (iBracket == -1)) {
                                 iChunkEnd = 0;
-                                chunkType.argvalue = ctVar;
+                                chunkType.argvalue = ChunkTypes.ctVariable;
                             }
                         }
                     }
@@ -902,7 +902,7 @@ public class Documenter {
             //Have we found a nested class?
             if ((iBrace > 0)
                     && (data.argvalue.toLowerCase().indexOf("class") < iBrace)
-                    && (data.argvalue.toLowerCase().indexOf("class") >= 0)) {
+                    && (data.argvalue.toLowerCase().contains("class"))) {
                 //Yes - Read to the end of it
                 iChunkEnd = 2;
                 chunkType.argvalue = ctClass + "3";
@@ -977,23 +977,22 @@ public class Documenter {
      */
     private void processChunk(String data, String parentClass, String filename) {
         processedChunks++;
-        String nextChunk = "";
+//        String nextChunk = "";
         String chunkType = "";
-        String sCheck = "";
-        String sClass = "";
-
-        while (data.trim() != "") {
+        
+        while (!"".equals(data.trim())) {
             //Extract the next 'chunk' of data
-            RefObject<String> tempRef_sData = new RefObject<String>(data);
-            RefObject<String> tempRef_sChunkType = new RefObject<String>(chunkType);
+            RefObject<String> tempRef_sData = new RefObject<>(data);
+            RefObject<String> tempRef_sChunkType = new RefObject<>(chunkType);
 
             //Get the next 'chunk'
-            nextChunk = getNextChunk(tempRef_sData, tempRef_sChunkType);
+            String nextChunk = getNextChunk(tempRef_sData, tempRef_sChunkType);
             data = tempRef_sData.argvalue;
             chunkType = tempRef_sChunkType.argvalue;
 
             //Is the chunk empty?
             if (!nextChunk.equals("")) {
+                String sCheck;
                 //If the chunk contains a new line
                 if (nextChunk.contains("\n")) {
                     //...get everything *up to* the CR...
@@ -1006,19 +1005,19 @@ public class Documenter {
                 if ((((sCheck.toLowerCase().contains("with sharing class ") || sCheck.toLowerCase().contains("global class ")) || (sCheck.toLowerCase().contains("public class ")
                         || sCheck.toLowerCase().contains("private class "))) || (((sCheck.toLowerCase().contains("global virtual class ") || sCheck.toLowerCase().contains("public virtual class "))
                         || (sCheck.toLowerCase().contains("private virtual class ") || sCheck.toLowerCase().contains("global abstract class "))) || (sCheck.toLowerCase().contains("public abstract class ")
-                        || sCheck.toLowerCase().contains("private abstract class ")))) && (chunkType != "Comment")) {
-                    RefObject<String> tempRef_sChunk = new RefObject<String>(nextChunk);
-                    sClass = extractText(tempRef_sChunk, nextChunk.indexOf("{") + 1).trim();
+                        || sCheck.toLowerCase().contains("private abstract class ")))) && (!ctComment.equals(chunkType))) {
+                    RefObject<String> tempRef_sChunk = new RefObject<>(nextChunk);
+                    String className = extractText(tempRef_sChunk, nextChunk.indexOf("{") + 1).trim();
                     nextChunk = tempRef_sChunk.argvalue;
 
                     if (nextChunk.endsWith("}")) {
                         nextChunk = nextChunk.substring(0, nextChunk.length() - 1);
                     }
                     //Output/save the class itself
-                    outputChunk(ctClass, sClass, parentClass, filename);
+                    outputChunk(ctClass, className, parentClass, filename);
 
                     //Strip out the class name so that we can prepend it onto any subclasses
-                    String str4 = sClass.substring(sClass.toUpperCase().indexOf("CLASS ") + 6).trim();
+                    String str4 = className.substring(className.toUpperCase().indexOf("CLASS ") + 6).trim();
                     if (str4.contains(" ")) {
                         str4 = str4.substring(0, str4.indexOf(" ")).trim();
                     }
@@ -1051,7 +1050,7 @@ public class Documenter {
         if (!"".equals(chunk.trim())) {
             String str;
 
-            if (((chunkType.equals("Comment")) || (chunkType.equals("Unknown"))) || (chunkType.equals("Tests"))) {
+            if (((chunkType.equals(ctComment)) || (chunkType.equals(ctUnknown))) || (chunkType.equals(ctTest))) {
                 str = "N/A";
             } else {
                 if (chunk.toUpperCase().startsWith("STATIC ")) {
@@ -1086,7 +1085,7 @@ public class Documenter {
                         newItem = decodeEnum(newItem);
                         break;
 
-                    case ctVar:
+                    case ChunkTypes.ctVariable:
                         newItem = decodeVar(newItem);
                         break;
 
@@ -1140,21 +1139,6 @@ public class Documenter {
                 //Did we identify a name for this chunk?
                 if (!"".equals(newItem.name.trim())) {
                     for (ItemData data2 : alItems) {
-//                            if (data2.sName.startsWith("enumCreditNoteStatus"))
-//                            {
-//                                debugOut("DEBUG: " + data2.sName);
-//                            }
-//
-//                            if ("Enumerations".equals(newItem.chunkType) && (data2.chunkType == null ? ctEnum == null : data2.chunkType.equals(ctEnum)))
-//                            {
-//                                if(data2.sName.toUpperCase().trim() == null ? newItem.sName.toUpperCase().trim() == null : data2.sName.toUpperCase().trim().equals(newItem.sName.toUpperCase().trim()))
-//                                {
-//                                    if (newItem.sName.startsWith("enumCreditNoteStatus"))
-//                                    {
-//                                        debugOut("DEBUG: " + data2.sName);
-//                                    }                                    
-//                                }
-//                            }
                         if (((data2.chunkType == null ? newItem.chunkType == null : data2.chunkType.equals(newItem.chunkType)) && (data2.name.toUpperCase().trim() == null ? newItem.name.toUpperCase().trim() == null : data2.name.toUpperCase().trim().equals(newItem.name.toUpperCase().trim()))) && (data2.instance >= newItem.instance)) {
                             newItem.instance = data2.instance + 1;
                         }
@@ -1211,11 +1195,10 @@ public class Documenter {
         str = str.substring(0, str.indexOf("}")).trim().replace("\n", " ").replace("\t", " ");
         String[] strArray = str.split("\\,");
 
-        ArrayList<String> alData = new ArrayList<String>();
+        ArrayList<String> alData = new ArrayList<>();
 
-        //Put the list of values into an ArrayList...
-        for (int iCount = 0; iCount < strArray.length; iCount++) {
-            alData.add(strArray[iCount].trim());
+        for (String strArray1 : strArray) {
+            alData.add(strArray1.trim());
         }
 
         java.util.Collections.sort(alData);
@@ -1223,9 +1206,9 @@ public class Documenter {
         // Iterate through the ArrayList and use it to construct a string of all possible values
         for (int index = 0; index < alData.size(); index++) {
             if (index == 0) {
-                str = alData.get(index).toString();
+                str = alData.get(index);
             } else {
-                str = str + ", " + alData.get(index).toString();
+                str = str + ", " + alData.get(index);
             }
         }
         newItem.values = str;
@@ -1564,7 +1547,6 @@ public class Documenter {
      * @return
      */
     private String FormatPlaceholders(String data, ArrayList<String> alDocPlaceholders) {
-        String sPlaceholder = "";
         StringBuilder sbResult = new StringBuilder();
 
         while (data.contains("[%")) //Loop until we run out of placeholders...
@@ -1578,7 +1560,7 @@ public class Documenter {
             if (data.contains("%]")) //If the source data contains the *end* of a placeholder...
             { //...extract the placeholder
                 //Extract the placeholder and convert it to uppercase
-                sPlaceholder = data.substring(0, data.indexOf("%]") + 2).toUpperCase().trim();
+                String sPlaceholder = data.substring(0, data.indexOf("%]") + 2).toUpperCase().trim();
                 data = data.substring(data.indexOf("%]") + 2);
 
                 sbResult.append(sPlaceholder); //Add the placeholder to the output data
@@ -1693,7 +1675,7 @@ public class Documenter {
                         upperCaseHeading = heading.toUpperCase().trim();
                     } else {
                         source = displayText;
-                        if (configModel.Namespace.trim() != "") {
+                        if (!"".equals(configModel.Namespace.trim())) {
                             source = source.substring(configModel.Namespace.length()).trim();
                         }
                         if (source.contains("\\.")) {
@@ -1732,7 +1714,7 @@ public class Documenter {
                     writer.write("    </TocEntry>" + NewLine);
                 }
                 writer.write("  </TocEntry>" + NewLine);
-                if (configModel.TocPostNodes.trim() != "") {
+                if (!"".equals(configModel.TocPostNodes.trim())) {
 //                writer.write(TocLinks.GenerateFlareXml(configModel.TocPostNodes).trim());
                 }
                 writer.write("</CatapultToc>" + NewLine);
@@ -1953,7 +1935,7 @@ public class Documenter {
         Boolean flag = false;
         Boolean bError = false;
         int num = 0;
-        ArrayList<String> alParams = new ArrayList<String>();
+        ArrayList<String> alParams = new ArrayList<>();
         String htmlPreParamTable = "";
         String sParam = "";
         String newValue;
@@ -1961,7 +1943,7 @@ public class Documenter {
         String str6;
 
         //Build the list of parameters
-        List<String> list2 = new ArrayList<String>();
+        List<String> list2 = new ArrayList<>();
 
 //        if(outputMethodName.contains("GetInvoice"))
 //            debugOut("DEBUG: " + outputMethodName);
@@ -2010,7 +1992,7 @@ public class Documenter {
                 sParam += data.charAt(iCount);
             }
         }
-        if (sParam.trim() != "") {
+        if (!"".equals(sParam.trim())) {
             list2.add(sParam);
         }
 
@@ -2067,7 +2049,7 @@ public class Documenter {
                 sType = buildTypeLink(sType, parentClass, true, false);
                 String usedByLink = buildUsedByLink(usedByName, usedByChunkType, usedByInstance);
                 storeTypeLink(sType, usedByLink, usedByName, usedByChunkType);
-                if ((sType + " " + newValue).trim() != "") {
+                if (!"".equals((sType + " " + newValue).trim())) {
                     alParams.add(sType + " " + newValue);
                 }
             }
@@ -2075,7 +2057,7 @@ public class Documenter {
                 if (n != 0) {
                     htmlPreParamTable = htmlPreParamTable + ", " + lineEnd;
                 }
-                htmlPreParamTable = htmlPreParamTable + lineStart + alParams.get(n).toString().trim();
+                htmlPreParamTable = htmlPreParamTable + lineStart + alParams.get(n).trim();
             }
         }
         return htmlPreParamTable;
@@ -2204,7 +2186,7 @@ public class Documenter {
      */
     private String createPropertyList(String outputMethodName, String className, String parentClass, String extendsClass, String itemChunkType, int instance) {
         String sResult = "";
-        ArrayList<String> alProps = new ArrayList<String>();
+        ArrayList<String> alProps = new ArrayList<>();
 
         //Does this class extend another class?
         if (!"".equals(extendsClass.trim())) {
@@ -2217,7 +2199,7 @@ public class Documenter {
         for (ItemData itemData : alItems) {
             // If this thing is a property (or a variable) *and* it's parent is the class
             // we're interested in...add it to our list of properties
-            if ((("Property".equals(itemData.chunkType)) || ("Variables".equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className))) {
+            if (((ctProperty.equals(itemData.chunkType)) || (ChunkTypes.ctVariable.equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className))) {
                 alProps.add(itemData.name + "[" + itemData.type + "]");
             }
         }
@@ -2428,7 +2410,6 @@ public class Documenter {
     private void storeTypeLink(String itemName, String filename, String usedByName, String usedByType) {
         boolean bFound = false;
         ItemUsage itemUsage = new ItemUsage();
-        ItemUsage iuCheck = null;
 
         if (!itemName.toUpperCase().trim().contains("<A HREF=")) //Does the item name contain a hyperlink? 
         {
@@ -2452,12 +2433,12 @@ public class Documenter {
             //would result in the 'Used By...' list containing duplicate entries). 
             //So...check to see if we already have an entry with the same data...
             for (int iCount = 0; iCount < alItemUsage.size(); iCount++) {
-                iuCheck = (ItemUsage) alItemUsage.toArray()[iCount];
+                ItemUsage itemUsageCheck = (ItemUsage) alItemUsage.toArray()[iCount];
 
-                if ((filename.equals(iuCheck.filename)) //If this item matches our new item... 
-                        && (usedByName.equals(iuCheck.usedByName))
-                        && (usedByType.equals(iuCheck.usedByType))
-                        && (itemName.equals(iuCheck.itemName))) {
+                if ((filename.equals(itemUsageCheck.filename)) //If this item matches our new item... 
+                        && (usedByName.equals(itemUsageCheck.usedByName))
+                        && (usedByType.equals(itemUsageCheck.usedByType))
+                        && (itemName.equals(itemUsageCheck.itemName))) {
                     bFound = true;
                     break;
                 }
@@ -2482,14 +2463,9 @@ public class Documenter {
      * @return
      */
     private String buildTypeLink(String type, String parentClass, boolean asItalic, boolean asText) {
-        String sResult = "";
         String sPrepend = "";
         String sAppend = "";
-        String sFindName = "";
-        String sFindClass = "";
-        String sPath = "";
         String sLink = "";
-        ItemData objItem = null;
 
         if (type.contains("<")) //Is the type a list/set/map (e.g. List<Integer>)?
         {
@@ -2517,6 +2493,8 @@ public class Documenter {
             type = type.substring(0, type.length() - 2).trim();
         }
 
+        String sFindClass;
+        String sFindName;
         if (type.contains(".")) //Is the type within another class?
         {
             //Yes - Extract *only* the type 
@@ -2530,20 +2508,20 @@ public class Documenter {
 
         //Try to find the type in our list of things...
         for (int iCount = 0; iCount < alItems.size(); iCount++) {
-            objItem = (ItemData) alItems.toArray()[iCount];
+            ItemData objItem = (ItemData) alItems.toArray()[iCount];
 
             //If this is the correct type...
             if ((objItem.name.toUpperCase().trim().equals(sFindName.toUpperCase().trim()))
                     && (objItem.parentClass.toUpperCase().trim().equals(sFindClass.toUpperCase().trim()))) {
                 //...store the hyperlink to it
-                sPath = getChunkTypePath(objItem.chunkType);
+                String sPath = getChunkTypePath(objItem.chunkType);
 
                 sLink = sPath + sFindName + Integer.toString(objItem.instance) + DefFileExt;
-
                 break;
             }
         }
 
+        String sResult;
         //If we have a link, create the HTML...
         if (!sLink.trim().equals("")) {
             sResult = "<a href=\"" + sLink + "\">" + configModel.Namespace + sFindClass + "." + sFindName + "</a>";
