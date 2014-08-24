@@ -555,23 +555,23 @@ public class Documenter {
 
             for (ItemData itemData : alItems) {
                 // These files are covered under web services so don't copy them to the types folder
-                if (itemData.sOutputFile.startsWith("CODA")) {
+                if (itemData.outputFile.startsWith("CODA")) {
                     //System.Diagnostics.Debug.WriteLine(objItem.sOutputFile);
                     continue;
                 }
 
                 // This is for debugging
-                if ((itemData.sChunkType == null ? docType == null : itemData.sChunkType.equals(docType)) && (docType == null ? ctEnum == null : docType.equals(ctEnum))) {
+                if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ctEnum == null : docType.equals(ctEnum))) {
                     createDocsEnums++;
                 }
 
-                if (((itemData.sChunkType == null ? docType == null : itemData.sChunkType.equals(docType)) &&
-                        (((!"".equals(itemData.sParentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.sChunkType.equals(ctClass)))) &&
-                        (((!itemData.sChunkType.equals(ctMethod)) || (itemData.MethodType != 1)) || !configModel.SkipConstructor)) {
+                if (((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) &&
+                        (((!"".equals(itemData.parentClass.trim())) || !configModel.SkipRootClasses) || (!itemData.chunkType.equals(ctClass)))) &&
+                        (((!itemData.chunkType.equals(ctMethod)) || (itemData.methodType != 1)) || !configModel.SkipConstructor)) {
                     
                     //Are we creating files?
                     if (createFiles) {
-                        path = docPath + itemData.sOutputFile;
+                        path = docPath + itemData.outputFile;
 
                         //Does the output file already exist?
                         if ((new File(path)).isFile()) {
@@ -581,7 +581,7 @@ public class Documenter {
                                 String sBackupFile = DateToShortDateString(new Date()) + " " + DateToShortTimeString(new Date());
                                 sBackupFile = sBackupFile.replace("\\", "-").replace(":", "-").replace("/", "").trim();
 
-                                sBackupFile = path + itemData.sName + Integer.toString(itemData.iInstance) + "-" + sBackupFile + DefFileExt;
+                                sBackupFile = path + itemData.name + Integer.toString(itemData.instance) + "-" + sBackupFile + DefFileExt;
 
                                 try {
                                     copyFile(path, sBackupFile);
@@ -593,7 +593,7 @@ public class Documenter {
                             (new java.io.File(path)).delete();
                         }
                     }
-                    String source = itemData.sOutputFile;
+                    String source = itemData.outputFile;
                     if (source.contains(".")) {
                         source = source.substring(0, source.indexOf('.')).trim();
                     }
@@ -604,31 +604,31 @@ public class Documenter {
                     //    sName = itemData.sName;
                     //}
                     String sName = sData;
-                    String sUsedByName = itemData.sName;
-                    if (!"".equals(itemData.sParentClass.trim())) {
-                        sUsedByName = itemData.sParentClass + "." + sUsedByName;
+                    String sUsedByName = itemData.name;
+                    if (!"".equals(itemData.parentClass.trim())) {
+                        sUsedByName = itemData.parentClass + "." + sUsedByName;
                     }
                     sUsedByName = configModel.Namespace + sUsedByName;
                     configModel.SnippetsList.clear();
 
                     sName = sName.replace("[%FULLNAME%]", sUsedByName);
-                    sName = sName.replace("[%NAME%]", itemData.sName);
-                    sName = sName.replace("[%ITEMTYPE%]", itemData.sChunkType);
-                    sName = sName.replace("[%FILENAME%]", itemData.sSourceFile);
-                    sName = sName.replace("[%INPUTPARAMS%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", false));
-                    sName = sName.replace("[%INPUTPARAMSCR%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, NewLine, configModel.ParamIndent, false));
-                    sName = sName.replace("[%INPUTPARAMSTABLE%]", createParamsData(sOutputMethodName, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sParams, itemData.sParentClass, "", "", true));
-                    sName = sName.replace("[%PARENT%]", itemData.sParentClass).replace("[%RETURNTYPE%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, false));
-                    sName = sName.replace("[%RETURNTYPETEXT%]", buildReturnLink(itemData.MethodType, sUsedByName, itemData.iInstance, itemData.sChunkType, itemData.sType, itemData.sParentClass, true));
-                    sName = sName.replace("[%VALUES%]", itemData.sValues).replace("[%VALUESTABLE%]", CreateValuesTable(sOutputMethodName, itemData.sValues));
-                    sName = sName.replace("[%USAGELIST%]", createUsageList(itemData.sName, itemData.sParentClass));
-                    sName = sName.replace("[%INTERFACELIST%]", createInterfaceList(itemData.sName, itemData.iInstance, itemData.sChunkType, itemData.sChunkData, itemData.sParentClass));
-                    sName = sName.replace("[%PROPERTYLIST%]", createPropertyList(sOutputMethodName, itemData.sName, itemData.sParentClass, itemData.sExtends, itemData.sChunkType, itemData.iInstance));
-                    sName = sName.replace("[%VISIBILITY%]", itemData.sVisibility);
-                    sName = sName.replace("[%RAWDATA%]", itemData.sChunkData);
+                    sName = sName.replace("[%NAME%]", itemData.name);
+                    sName = sName.replace("[%ITEMTYPE%]", itemData.chunkType);
+                    sName = sName.replace("[%FILENAME%]", itemData.sourceFile);
+                    sName = sName.replace("[%INPUTPARAMS%]", createParamsData(sOutputMethodName, sUsedByName, itemData.instance, itemData.chunkType, itemData.params, itemData.parentClass, "", "", false));
+                    sName = sName.replace("[%INPUTPARAMSCR%]", createParamsData(sOutputMethodName, sUsedByName, itemData.instance, itemData.chunkType, itemData.params, itemData.parentClass, NewLine, configModel.ParamIndent, false));
+                    sName = sName.replace("[%INPUTPARAMSTABLE%]", createParamsData(sOutputMethodName, sUsedByName, itemData.instance, itemData.chunkType, itemData.params, itemData.parentClass, "", "", true));
+                    sName = sName.replace("[%PARENT%]", itemData.parentClass).replace("[%RETURNTYPE%]", buildReturnLink(itemData.methodType, sUsedByName, itemData.instance, itemData.chunkType, itemData.type, itemData.parentClass, false));
+                    sName = sName.replace("[%RETURNTYPETEXT%]", buildReturnLink(itemData.methodType, sUsedByName, itemData.instance, itemData.chunkType, itemData.type, itemData.parentClass, true));
+                    sName = sName.replace("[%VALUES%]", itemData.values).replace("[%VALUESTABLE%]", CreateValuesTable(sOutputMethodName, itemData.values));
+                    sName = sName.replace("[%USAGELIST%]", createUsageList(itemData.name, itemData.parentClass));
+                    sName = sName.replace("[%INTERFACELIST%]", createInterfaceList(itemData.name, itemData.instance, itemData.chunkType, itemData.chunkData, itemData.parentClass));
+                    sName = sName.replace("[%PROPERTYLIST%]", createPropertyList(sOutputMethodName, itemData.name, itemData.parentClass, itemData.extendsClass, itemData.chunkType, itemData.instance));
+                    sName = sName.replace("[%VISIBILITY%]", itemData.visibility);
+                    sName = sName.replace("[%RAWDATA%]", itemData.chunkData);
                     sName = sName.replace("[%PRODUCTNAMESPACE%]", configModel.Namespace);
                     sName = sName.replace("[%OUTPUTNAME%]", source);
-                    sName = sName.replace("[%OUTPUTFILENAME%]", itemData.sOutputFile);
+                    sName = sName.replace("[%OUTPUTFILENAME%]", itemData.outputFile);
                     sName = sName.replace("[%OUTPUTPATH%]", docPath);
                     sName = sName.replace("[%DATE%]", DateToShortTimeString(new Date()));
                     sName = sName.replace("[%TIME%]", DateToShortTimeString(new Date()));
@@ -648,7 +648,7 @@ public class Documenter {
 
                     for (String placeHolder : alDocPlaceholders) {
                         String sPlaceholder = placeHolder;
-                        String newValue = getDocData(sPlaceholder, itemData.sName, itemData.sParentClass);
+                        String newValue = getDocData(sPlaceholder, itemData.name, itemData.parentClass);
                         sName = sName.replace(sPlaceholder, newValue);
                     }
 
@@ -671,7 +671,7 @@ public class Documenter {
                         }
 
                         if (configModel.Toc != 0) {
-                            tocList.add(itemData.sChunkType + "[" + sUsedByName + "]" + path);
+                            tocList.add(itemData.chunkType + "[" + sUsedByName + "]" + path);
                         }
                         if (configModel.IncludeSnippets) {
                             createSnippetFiles(String.format("%s%s\\%s", rootPath, SnippetsFolder, sOutputMethodName), configModel.SnippetsList, bSnippetDescr, bSnippetExample, bSnippetInput, bSnippetOutput, configModel.SnippetMarker);
@@ -1077,13 +1077,13 @@ public class Documenter {
                     || ((((str.equals("GLOBAL")) && configModel.ShowGlobal) || ((str.equals("WEBSERVICE")) && configModel.ShowWebService)) || (str.equals("N/A"))))
                 {
                     ItemData newItem = new ItemData();
-                    newItem.sName = "";
-                    newItem.sParentClass = sParentClass;
-                    newItem.sChunkType = sChunkType;
-                    newItem.sChunkData = sChunk;
-                    newItem.sVisibility = str;
-                    newItem.sSourceFile = sFilename;
-                    newItem.iInstance = 1;
+                    newItem.name = "";
+                    newItem.parentClass = sParentClass;
+                    newItem.chunkType = sChunkType;
+                    newItem.chunkData = sChunk;
+                    newItem.visibility = str;
+                    newItem.sourceFile = sFilename;
+                    newItem.instance = 1;
 
                     switch (sChunkType)
                     {
@@ -1130,8 +1130,8 @@ public class Documenter {
                             break;
 
                         case ctRemoteAction:
-                            newItem.sChunkType = "Methods";
-                            newItem.RemoteAction = true;
+                            newItem.chunkType = "Methods";
+                            newItem.remoteAction = true;
                             newItem = decodeMethod(newItem);
                             break;
                             
@@ -1142,14 +1142,14 @@ public class Documenter {
                     }
                     
                     Boolean debugPrint = false;
-                    if (newItem.sName.startsWith("enumCreditNoteStatus"))
+                    if (newItem.name.startsWith("enumCreditNoteStatus"))
                     {
                         //debugOut("DEBUG: " + newItem.sName);
                         debugPrint = true;
                     }
                      
                     //Did we identify a name for this chunk?
-                    if (!"".equals(newItem.sName.trim()))
+                    if (!"".equals(newItem.name.trim()))
                     {
                         for (ItemData data2 : alItems)
                         {
@@ -1168,12 +1168,12 @@ public class Documenter {
 //                                    }                                    
 //                                }
 //                            }
-                            if (((data2.sChunkType == null ? newItem.sChunkType == null : data2.sChunkType.equals(newItem.sChunkType)) && (data2.sName.toUpperCase().trim() == null ? newItem.sName.toUpperCase().trim() == null : data2.sName.toUpperCase().trim().equals(newItem.sName.toUpperCase().trim()))) && (data2.iInstance >= newItem.iInstance))
+                            if (((data2.chunkType == null ? newItem.chunkType == null : data2.chunkType.equals(newItem.chunkType)) && (data2.name.toUpperCase().trim() == null ? newItem.name.toUpperCase().trim() == null : data2.name.toUpperCase().trim().equals(newItem.name.toUpperCase().trim()))) && (data2.instance >= newItem.instance))
                             {
-                                newItem.iInstance = data2.iInstance + 1;
+                                newItem.instance = data2.instance + 1;
                             }
                         }
-                        newItem.sOutputFile = newItem.sName + newItem.iInstance + ".htm";
+                        newItem.outputFile = newItem.name + newItem.instance + ".htm";
                         alItems.add(newItem);
 //                        if(debugPrint)
 //                        {
@@ -1191,15 +1191,15 @@ public class Documenter {
     // 
     //**************************************************************************
     private ItemData decodeClass(ItemData newItem) {
-        newItem.sName = extractItemName(newItem, "CLASS");
+        newItem.name = extractItemName(newItem, "CLASS");
 
         //Work out if this class extends another class...and store it if it does
-        if (newItem.sChunkData.toLowerCase().contains(" extends ")) //Does the chunk data contain 'extends'?
+        if (newItem.chunkData.toLowerCase().contains(" extends ")) //Does the chunk data contain 'extends'?
         { 																//Yes - Work out *what* it extends
-            newItem.sExtends = newItem.sChunkData.substring(newItem.sChunkData.toLowerCase().indexOf(" extends ") + 8).trim();
+            newItem.extendsClass = newItem.chunkData.substring(newItem.chunkData.toLowerCase().indexOf(" extends ") + 8).trim();
 
-            if (newItem.sExtends.endsWith("{")) {
-                newItem.sExtends = newItem.sExtends.substring(0, newItem.sExtends.length() - 1).trim();
+            if (newItem.extendsClass.endsWith("{")) {
+                newItem.extendsClass = newItem.extendsClass.substring(0, newItem.extendsClass.length() - 1).trim();
             }
         }
 
@@ -1213,9 +1213,9 @@ public class Documenter {
     // 
     //**************************************************************************
     private ItemData decodeEnum(ItemData newItem) {
-        newItem.sName = extractItemName(newItem, "ENUM");
+        newItem.name = extractItemName(newItem, "ENUM");
 
-        String str = preProcessComments(newItem.sChunkData, true);
+        String str = preProcessComments(newItem.chunkData, true);
 
         //Extract the data between the two brace-brackets - this will contain the available values for the enum
         str = str.substring(str.indexOf("{") + 1).trim();
@@ -1239,7 +1239,7 @@ public class Documenter {
                 str = str + ", " + alData.get(index).toString();
             }
         }
-        newItem.sValues = str;
+        newItem.values = str;
         return newItem;
     }
     
@@ -1249,7 +1249,7 @@ public class Documenter {
     // definition, this routine extract the variable's name and type
     //**************************************************************************
     private ItemData decodeVar(ItemData newItem) {
-        String sData = newItem.sChunkData;
+        String sData = newItem.chunkData;
 
         if (sData.contains("=")) //Does the data a have a '=' in it?
         {
@@ -1266,10 +1266,10 @@ public class Documenter {
         if (sData.contains(" "))
         {
             //Yes - It's well formed then (type *and* name)...so use it
-            newItem.sName = sData.substring(sData.lastIndexOf(" ")).trim();
+            newItem.name = sData.substring(sData.lastIndexOf(" ")).trim();
             sData = sData.substring(0, sData.lastIndexOf(" ")).trim();
 
-            newItem.sType = extractReturnType(sData);
+            newItem.type = extractReturnType(sData);
         }
 
         return newItem;
@@ -1283,24 +1283,24 @@ public class Documenter {
     //**************************************************************************
     private ItemData decodeMethod(ItemData newItem)
         {
-            String sChunkData = newItem.sChunkData;
+            String sChunkData = newItem.chunkData;
             sChunkData = sChunkData.substring(0, sChunkData.indexOf("(")).trim();
-            newItem.sName = sChunkData.substring(sChunkData.lastIndexOf(" ")).trim();
+            newItem.name = sChunkData.substring(sChunkData.lastIndexOf(" ")).trim();
             sChunkData = sChunkData.substring(0, sChunkData.lastIndexOf(" ")).trim();
-            newItem.sType = extractReturnType(sChunkData);
-            if ("[CONSTRUCTOR]".equals(newItem.sType))
+            newItem.type = extractReturnType(sChunkData);
+            if ("[CONSTRUCTOR]".equals(newItem.type))
             {
-                newItem.sType = "";
-                newItem.MethodType = 1;
+                newItem.type = "";
+                newItem.methodType = 1;
             }
-            if ("WEBSERVICE".equals(newItem.sVisibility.toUpperCase().trim()))
+            if ("WEBSERVICE".equals(newItem.visibility.toUpperCase().trim()))
             {
-                newItem.MethodType = 2;
+                newItem.methodType = 2;
             }
-            sChunkData = newItem.sChunkData;
+            sChunkData = newItem.chunkData;
             sChunkData = sChunkData.substring(sChunkData.indexOf("(") + 1).trim();
             sChunkData = sChunkData.substring(0, sChunkData.indexOf(")")).trim();
-            newItem.sParams = sChunkData;
+            newItem.params = sChunkData;
             return newItem;
         }
     
@@ -1323,7 +1323,7 @@ public class Documenter {
         int length = 0;
         
         //Replace any tabs with single spaces
-        String str = newItem.sChunkData.replace("\t", " ").trim();
+        String str = newItem.chunkData.replace("\t", " ").trim();
 
         //If this is a single line comment...remove the leading '//'                
         if (str.startsWith("//"))
@@ -1345,11 +1345,11 @@ public class Documenter {
         //Work out if the comment contains any documentation flags...and extract them if it does
         if (str.toUpperCase().contains("@DOC ")) {
             str = str.substring(str.toUpperCase().indexOf("@DOC ") + ("@".length() + 4)).trim();
-            newItem.sName = str.substring(0, str.indexOf(" ")).trim();
-            newItem.sParams = str.substring(str.indexOf(" ")).trim();
+            newItem.name = str.substring(0, str.indexOf(" ")).trim();
+            newItem.params = str.substring(str.indexOf(" ")).trim();
             return newItem;
         } else {
-            newItem.sName = ""; //This *isn't* a set of 'doc' data...so forget about it
+            newItem.name = ""; //This *isn't* a set of 'doc' data...so forget about it
         }
         return newItem;
     }
@@ -1360,15 +1360,15 @@ public class Documenter {
     // definition, this routine extracts the property name and type
     //**************************************************************************
     private ItemData decodeProperty(ItemData newItem) {
-        String sData = newItem.sChunkData;
+        String sData = newItem.chunkData;
 
         //Extract the name
         sData = sData.substring(0, sData.indexOf("{")).trim();
-        newItem.sName = sData.substring(sData.lastIndexOf(" ")).trim();
+        newItem.name = sData.substring(sData.lastIndexOf(" ")).trim();
 
         //Extract the return type
         sData = sData.substring(0, sData.lastIndexOf(" ")).trim();
-        newItem.sType = extractReturnType(sData);
+        newItem.type = extractReturnType(sData);
 
         return newItem;
     }
@@ -1391,13 +1391,13 @@ public class Documenter {
     // definition, this routine extracts the interface name and type
     //**************************************************************************
     private ItemData decodeInterface(ItemData newItem) {
-        String sChunkData = newItem.sChunkData;
+        String sChunkData = newItem.chunkData;
         sChunkData = sChunkData.substring(sChunkData.toUpperCase().indexOf("INTERFACE ")).trim();
         sChunkData = sChunkData.substring(sChunkData.indexOf(" ")).trim();
         if (sChunkData.contains("{")) {
             sChunkData = sChunkData.substring(0, sChunkData.indexOf("{")).trim();
         }
-        newItem.sName = sChunkData;
+        newItem.name = sChunkData;
         return newItem;
     }
     
@@ -1458,7 +1458,7 @@ public class Documenter {
     // name, parameter name)
     //**************************************************************************
     private String extractItemName(ItemData newItem, String sFind) {
-        String sData = newItem.sChunkData;
+        String sData = newItem.chunkData;
 
         //Does the data contain the string that we're looking for?
         if (!sData.toUpperCase().contains(sFind.toUpperCase()))
@@ -1821,12 +1821,12 @@ public class Documenter {
     // 
     //**************************************************************************
     private String GenerateSnippetFilename(ItemData itemData) {
-        String str = itemData.sParentClass + "-" + itemData.sName;
-        if ((("Methods".equals(itemData.sChunkType)) || ("Tests".equals(itemData.sChunkType))) || ("Web Services".equals(itemData.sChunkType))) {
-            if ("".equals(itemData.sParams.trim())) {
+        String str = itemData.parentClass + "-" + itemData.name;
+        if ((("Methods".equals(itemData.chunkType)) || ("Tests".equals(itemData.chunkType))) || ("Web Services".equals(itemData.chunkType))) {
+            if ("".equals(itemData.params.trim())) {
                 return (str + "0");
             }
-            String[] strArray = itemData.sParams.toUpperCase().split("\\,");
+            String[] strArray = itemData.params.toUpperCase().split("\\,");
             str = String.format("%s%d", str, strArray.length);
 
             for (String item : strArray) {
@@ -2186,9 +2186,9 @@ public class Documenter {
             {
                 // If this thing is a property (or a variable) *and* it's parent is the class
                 // we're interested in...add it to our list of properties
-                if ((("Property".equals(itemData.sChunkType)) || ("Variables".equals(itemData.sChunkType))) && (itemData.sParentClass.equals(parentClass + "." + className)))
+                if ((("Property".equals(itemData.chunkType)) || ("Variables".equals(itemData.chunkType))) && (itemData.parentClass.equals(parentClass + "." + className)))
                 {
-                    alProps.add(itemData.sName + "[" + itemData.sType + "]");
+                    alProps.add(itemData.name + "[" + itemData.type + "]");
                 }
             }
 
@@ -2266,29 +2266,29 @@ public class Documenter {
                 }
 
                 ItemData newItem = new ItemData();
-                newItem.sChunkData = preItem.trim();
+                newItem.chunkData = preItem.trim();
 
-                if (newItem.sChunkData.contains("("))
+                if (newItem.chunkData.contains("("))
                 {
                     newItem = decodeMethod(newItem);
-                    String name = newItem.sName;
-                    String paramsData = newItem.sParams;
+                    String name = newItem.name;
+                    String paramsData = newItem.params;
                     paramsData = createParamsData("", className, instance, chunkType, paramsData, parentClass, "", "", false);
                     
                     String str4;
-                    if ("".equals(newItem.sType.trim())) {
+                    if ("".equals(newItem.type.trim())) {
                         str4 = "void";
                     } else {
-                        str4 = buildTypeLink(newItem.sType, className, false, false);
+                        str4 = buildTypeLink(newItem.type, className, false, false);
                     }
                     
                     String newValue = "";
                     for (ItemData item : alItems)
                     {
-                        if (((item.sName.toUpperCase().trim() != name.toUpperCase().trim()) ||
-                             (item.sParentClass.toUpperCase().trim() != parentClass.toUpperCase().trim())) ||
-                            (item.sChunkType != "Methods")) continue;
-                        newValue = getChunkTypePath(item.sChunkType) + name + item.iInstance + ".htm";
+                        if (((!item.name.toUpperCase().trim().equals(name.toUpperCase().trim())) ||
+                             (!item.parentClass.toUpperCase().trim().equals(parentClass.toUpperCase().trim()))) ||
+                            (!"Methods".equals(item.chunkType))) continue;
+                        newValue = getChunkTypePath(item.chunkType) + name + item.instance + ".htm";
                         break;
                     }
                     if (!"".equals(name.trim()))
@@ -2487,12 +2487,12 @@ public class Documenter {
             objItem = (ItemData) alItems.toArray()[iCount];
 
             //If this is the correct type...
-            if ((objItem.sName.toUpperCase().trim().equals(sFindName.toUpperCase().trim()))
-                    && (objItem.sParentClass.toUpperCase().trim().equals(sFindClass.toUpperCase().trim()))) {
+            if ((objItem.name.toUpperCase().trim().equals(sFindName.toUpperCase().trim()))
+                    && (objItem.parentClass.toUpperCase().trim().equals(sFindClass.toUpperCase().trim()))) {
                 //...store the hyperlink to it
-                sPath = getChunkTypePath(objItem.sChunkType);
+                sPath = getChunkTypePath(objItem.chunkType);
 
-                sLink = sPath + sFindName + Integer.toString(objItem.iInstance) + DefFileExt;
+                sLink = sPath + sFindName + Integer.toString(objItem.instance) + DefFileExt;
 
                 break;
             }
