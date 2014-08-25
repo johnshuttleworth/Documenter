@@ -88,7 +88,7 @@ public class Documenter {
 //        {
 //            sConfigFile = args[0];		//Yes - Store its name
 //        }
-        String configFilename = "C:\\Dev_GitHub\\Documenter\\src\\ConfigFilesEtc\\V12.dcf";
+        String configFilename = ".\\ConfigFiles\\V12.dcf";
 
         //Output copyright info, version etc.
         System.out.printf("%s %s\n%s\n\n", appName, appVersion, appCopyright);
@@ -506,6 +506,7 @@ public class Documenter {
      * @param createFiles
      */
     private void CreateDocs(String docPath, String rootPath, String docType, String docTemplate, List<String> tocList, Boolean createFiles) {
+        String dir = System.getProperty("user.dir");
         String path = "";
         String sData = "";
         ArrayList<String> alDocPlaceholders = new ArrayList<>();

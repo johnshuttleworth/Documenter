@@ -73,12 +73,12 @@
     <target name="-post-jar">
         <mkdir dir="${dist.dir}/TemplateFiles" />
         <copy todir="${dist.dir}/TemplateFiles">
-            <fileset dir="${basedir}/src/TemplateFiles" includes="**/*" />
+            <fileset dir="${basedir}/TemplateFiles" includes="**/*" />
         </copy>
         
         <mkdir dir="${dist.dir}/ConfigFiles" />
         <copy todir="${dist.dir}/ConfigFiles">
-            <fileset dir="${basedir}/src/ConfigFilesEtc" includes="**/*" />
+            <fileset dir="${basedir}/ConfigFiles" includes="**/*" />
         </copy>
     </target>
 

@@ -31,7 +31,7 @@ public class ConfigurationSvc {
 /// <returns></returns>
     public static ConfigModel LoadConfigFile(String filename) {
         configFilename = filename;
-
+        String dir = System.getProperty("user.dir");
         Configuration = new ConfigModel();
 
         System.out.printf("Loading Configuration (%s)...", filename);
