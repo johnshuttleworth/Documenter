@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
  */
 public class Documenter {
 
+    String pathSeparator = System.getProperty("file.separator");
     private Integer outputtedChunks = 0;
     private Integer processedChunks = 0;
     private Integer outputChunkEnum = 0;
@@ -61,18 +62,18 @@ public class Documenter {
     private final Map<String, String> snippetText = new HashMap<>();
 
     private final String IndexFolder = "Content";
-    private final String TocFolder = "Projects\\Tocs";
+    private final String TocFolder = "Projects//Tocs";
 
     // <editor-fold defaultstate="collapsed" desc="**************** Template Folders ******************">
-    private final String EnumsFolder = "Content\\Reference\\Enums";
-    private final String ServicesFolder = "Content\\Reference\\Services";
-    private final String TypesFolder = "Content\\Reference\\Types";
-    private final String TestsFolder = "Content\\Reference\\Tests";
-    private final String UnknownFolder = "Content\\Reference\\Unknown";
-    private final String InterfacesFolder = "Content\\Reference\\Interfaces";
+    private final String EnumsFolder = "Content//Reference//Enums";
+    private final String ServicesFolder = "Content//Reference//Services";
+    private final String TypesFolder = "Content//Reference//Types";
+    private final String TestsFolder = "Content//Reference//Tests";
+    private final String UnknownFolder = "Content//Reference//Unknown";
+    private final String InterfacesFolder = "Content//Reference//Interfaces";
     // </editor-fold>
     
-    private final String SnippetsFolder = "Content\\Resources\\Snippets";
+    private final String SnippetsFolder = "Content//Resources//Snippets";
 
     private static final String DefFileExt = ".htm";
 
@@ -88,7 +89,8 @@ public class Documenter {
 //        {
 //            sConfigFile = args[0];		//Yes - Store its name
 //        }
-        String configFilename = ".\\ConfigFiles\\V12.dcf";
+        String rootFolder = System.getProperty("user.dir");
+        String configFilename = rootFolder + "//ConfigFiles//V12.dcf";
 
         //Output copyright info, version etc.
         System.out.printf("%s %s\n%s\n\n", appName, appVersion, appCopyright);
@@ -173,9 +175,9 @@ public class Documenter {
 
         populateSnippetText();
 
-        if (!configModel.SourceFolder.endsWith("\\")) //Does our input folder end with a '\'?
+        if (!configModel.SourceFolder.endsWith("//")) //Does our input folder end with a '\'?
         {
-            configModel.SourceFolder += "\\";
+            configModel.SourceFolder += "//";
         }
         //Get a list of files in the input folder
         File f = new File(configModel.SourceFolder);
@@ -271,7 +273,7 @@ public class Documenter {
         //Remove the scan path
         filename = filename.substring(configModel.SourceFolder.length());
         //Check whether the filename starts with '\'...
-        if (filename.startsWith("\\")) {
+        if (filename.startsWith("//")) {
             //...and remove it if it does
             filename = filename.substring(1);
         }
@@ -404,12 +406,12 @@ public class Documenter {
         outputFolder = outputFolder.trim();
 
         //Create the root output folder
-        (new File(outputFolder)).mkdir();
+        (new File(outputFolder)).mkdirs();
 
         //Does our output folder end with a '\'?
-        if (!outputFolder.endsWith("\\")) {
+        if (!outputFolder.endsWith("//")) {
             //Nope - Add one on
-            outputFolder += "\\";
+            outputFolder += "//";
         }
 
         //Create the individual item type output folders
@@ -451,9 +453,9 @@ public class Documenter {
     private void generateOutputDocs(String outputFolder) {
         ArrayList<String> tocList = new ArrayList<>();
 
-        if (!outputFolder.endsWith("\\")) //Does our output folder end with a '\'?
+        if (!outputFolder.endsWith("//")) //Does our output folder end with a '\'?
         {
-            outputFolder += "\\"; 		//Nope - Add one on
+            outputFolder += "//"; 		//Nope - Add one on
         }
 
         alItemUsage.clear();
@@ -538,12 +540,12 @@ public class Documenter {
             }
             sData = FormatPlaceholders(sData, alDocPlaceholders);
 
-            if (!docPath.endsWith("\\")) {
-                docPath += "\\";
+            if (!docPath.endsWith("//")) {
+                docPath += "//";
             }
 
-            if (!rootPath.endsWith("\\")) {
-                rootPath += "\\";
+            if (!rootPath.endsWith("//")) {
+                rootPath += "//";
             }
 
             for (ItemData itemData : alItems) {
@@ -572,7 +574,7 @@ public class Documenter {
                             if (!configModel.bOverwriteDocs) {
                                 //No - Create a backup of the file
                                 String sBackupFile = DateToShortDateString(new Date()) + " " + DateToShortTimeString(new Date());
-                                sBackupFile = sBackupFile.replace("\\", "-").replace(":", "-").replace("/", "").trim();
+                                sBackupFile = sBackupFile.replace("//", "-").replace(":", "-").replace("/", "").trim();
 
                                 sBackupFile = path + itemData.name + Integer.toString(itemData.instance) + "-" + sBackupFile + DefFileExt;
 
@@ -660,7 +662,7 @@ public class Documenter {
                             tocList.add(itemData.chunkType + "[" + sUsedByName + "]" + path);
                         }
                         if (configModel.IncludeSnippets) {
-                            createSnippetFiles(String.format("%s%s\\%s", rootPath, SnippetsFolder, sOutputMethodName), configModel.SnippetsList, bSnippetDescr, bSnippetExample, bSnippetInput, bSnippetOutput, configModel.SnippetMarker);
+                            createSnippetFiles(String.format("%s%s//%s", rootPath, SnippetsFolder, sOutputMethodName), configModel.SnippetsList, bSnippetDescr, bSnippetExample, bSnippetInput, bSnippetOutput, configModel.SnippetMarker);
                         }
                     }
                 }
@@ -1553,8 +1555,8 @@ public class Documenter {
 
         java.util.Collections.sort(tocList);
 
-        if (!outputFolder.endsWith("\\")) {
-            outputFolder += "\\";
+        if (!outputFolder.endsWith("//")) {
+            outputFolder += "//";
         }
 
         try {
@@ -1593,8 +1595,8 @@ public class Documenter {
 
         java.util.Collections.sort(tocList);
 
-        if (!outputFolder.endsWith("\\")) {
-            outputFolder += "\\";
+        if (!outputFolder.endsWith("//")) {
+            outputFolder += "//";
         }
 
         try {
@@ -1787,7 +1789,7 @@ public class Documenter {
      * @param message
      */
     private void debugOut(String message) {
-        String debugFileName = configModel.OutputFolder + "\\Debug.txt";
+        String debugFileName = configModel.OutputFolder + "//Debug.txt";
 
         try {
             Date date = new Date();
@@ -1819,7 +1821,7 @@ public class Documenter {
      * @param latestVersionFileList
      */
     private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
-        String filesProcessedFileName = configModel.OutputFolder + "\\FilesProcessed.txt";
+        String filesProcessedFileName = configModel.OutputFolder + "//FilesProcessed.txt";
 
         //Does the output file already exist?
         if ((new File(filesProcessedFileName)).isFile()) {
@@ -2280,12 +2282,12 @@ public class Documenter {
      * @param snippetMarker
      */
     private void createSnippetFiles(String outputName, List<String> paramItems, boolean snippetDescr, boolean snippetExample, boolean snippetInput, boolean snippetOutput, String snippetMarker) {
-        String str = outputName.substring(0, outputName.lastIndexOf("\\"));
+        String str = outputName.substring(0, outputName.lastIndexOf("//"));
 
 //        String message = String.format("WARNING: %s %d", outputName, paramItems.size());
 //        debugOut(message);
-        if (!str.endsWith("\\")) {
-            str = str + "\\";
+        if (!str.endsWith("//")) {
+            str = str + "//";
         }
         if (snippetDescr) {
             createSnippetFile(outputName + "-descr.flsnp", snippetMarker);

@@ -23,6 +23,9 @@ public class ConfigurationSvc {
     public static String configFilename;
 
     private static final String newLine = "\n";
+    
+    private static boolean globalAbort = false;
+    private static String globalAbortText = "";
 
 /// <summary>
 /// Loads the configuration file.
@@ -31,7 +34,8 @@ public class ConfigurationSvc {
 /// <returns></returns>
     public static ConfigModel LoadConfigFile(String filename) {
         configFilename = filename;
-        String dir = System.getProperty("user.dir");
+        String currentFolder = System.getProperty("user.dir");
+        String rootFolder = System.getProperty("user.home");
         Configuration = new ConfigModel();
 
         System.out.printf("Loading Configuration (%s)...", filename);
@@ -107,7 +111,7 @@ public class ConfigurationSvc {
                             continue;
                         }
                         case "PATHINPUT": {
-                            Configuration.SourceFolder = value;
+                            Configuration.SourceFolder = rootFolder + value;
                             continue;
                         }
                         case "PATHOUTPUT": {
@@ -305,11 +309,11 @@ public class ConfigurationSvc {
 
             System.out.println("Done");
         } catch (FileNotFoundException e) {
-            //sGlobalDebug = "FileNotFound (Config): " + sConfigFile + " Error: " + e.getMessage();
-            //bGlobalAbort = true;
+            globalAbortText = "FileNotFound (Config): " + filename  + " Error: " + e.getMessage();
+            globalAbort = true;
         } catch (IOException e) {
-            //sGlobalDebug = "IOException (Config): " + sConfigFile + " Error: " + e.getMessage();
-//            bGlobalAbort = true;
+            globalAbortText = "IOException (Config): " + filename + " Error: " + e.getMessage();
+            globalAbort = true;
         }
 
         if (Configuration.AlHtml != null) {
