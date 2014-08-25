@@ -63,13 +63,15 @@ public class Documenter {
     private final String IndexFolder = "Content";
     private final String TocFolder = "Projects\\Tocs";
 
+    // <editor-fold defaultstate="collapsed" desc="**************** Template Folders ******************">
     private final String EnumsFolder = "Content\\Reference\\Enums";
     private final String ServicesFolder = "Content\\Reference\\Services";
     private final String TypesFolder = "Content\\Reference\\Types";
     private final String TestsFolder = "Content\\Reference\\Tests";
     private final String UnknownFolder = "Content\\Reference\\Unknown";
     private final String InterfacesFolder = "Content\\Reference\\Interfaces";
-
+    // </editor-fold>
+    
     private final String SnippetsFolder = "Content\\Resources\\Snippets";
 
     private static final String DefFileExt = ".htm";
@@ -156,13 +158,10 @@ public class Documenter {
         configModel = ConfigurationSvc.LoadConfigFile(configurationFileName);
     }
 
-    //**************************************************************************
-    // Method: scanFile
-    // Scan for the file that we are interested in and select the latest versions 
-    //
-    //**************************************************************************
+    //<editor-fold defaultstate="collapsed" desc="="**************** Scan source files and process ****">
+    
     /**
-     *
+     * Scan for the file that we are interested in and select the latest versions 
      * @return
      */
     private List<FilenameVersionFf> scanFiles() {
@@ -232,34 +231,6 @@ public class Documenter {
             }
         }
         return latestVersionFileList;
-    }
-
-    /**
-     *
-     * @param latestVersionFileList
-     */
-    private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList) {
-        Integer totalFiles = 0;
-
-        List<String> excludeList = configModel.AllExcludeFiles;
-        for (FilenameVersionFf fileName : latestVersionFileList) {
-            String name = fileName.name;
-            if (name != null) {
-                name = name.toLowerCase().trim();
-
-//                    String testCatch = "CODAAPIGeneralLedgerAccountTypes";
-//                    if (name.toUpperCase().startsWith(testCatch.toUpperCase())) {
-//                        DebugOut(name);
-//                    }
-                if (!excludeList.contains(name)) {
-                    totalFiles++;
-                    scanFile(fileName.fullName);
-                } else {
-                    excludedFiles++;
-                    System.out.printf(fileName.fullName + " not scaned " + excludedFiles);
-                }
-            }
-        }
     }
 
     /**
@@ -389,6 +360,38 @@ public class Documenter {
             globalAbortText = debugText;
         }
     }
+    
+    /**
+     *
+     * @param latestVersionFileList
+     */
+    private void processSelectedFiles(List<FilenameVersionFf> latestVersionFileList) {
+        Integer totalFiles = 0;
+
+        List<String> excludeList = configModel.AllExcludeFiles;
+        for (FilenameVersionFf fileName : latestVersionFileList) {
+            String name = fileName.name;
+            if (name != null) {
+                name = name.toLowerCase().trim();
+
+//                    String testCatch = "CODAAPIGeneralLedgerAccountTypes";
+//                    if (name.toUpperCase().startsWith(testCatch.toUpperCase())) {
+//                        DebugOut(name);
+//                    }
+                if (!excludeList.contains(name)) {
+                    totalFiles++;
+                    scanFile(fileName.fullName);
+                } else {
+                    excludedFiles++;
+                    System.out.printf(fileName.fullName + " not scaned " + excludedFiles);
+                }
+            }
+        }
+    }
+
+    //</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="**************** File creation **********************">
 
     /**
      * This routine attempts to create the output folder structure used to hold
@@ -663,95 +666,122 @@ public class Documenter {
             }
         }
     }
-
-    /**
+    
+     /**
      *
-     * @param latestVersionFileList
-     */
-    private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
-        String filesProcessedFileName = configModel.OutputFolder + "\\FilesProcessed.txt";
-
-        //Does the output file already exist?
-        if ((new File(filesProcessedFileName)).isFile()) {
-            (new File(filesProcessedFileName)).delete();
-        }
-
-        try {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filesProcessedFileName))) {
-                for (FilenameVersionFf file : latestVersionFileList) {
-                    writer.write(file.fullName + "\n");
-                }
-            }
-        } catch (IOException e) {
-        }
-    }
-
-    /**
-     *
-     */
-    private void populateSnippetText() {
-        // Add some elements to the dictionary. 
-        snippetText.put("prop-Id", "JOHN_101");
-        snippetText.put("prop-IsDeleted", "JOHN_YES");
-        snippetText.put("prop-CreatedById", "JOHN_CreatedBy");
-        snippetText.put("prop-CreatedDate", "JOHN_Created_Date");
-        snippetText.put("prop-LastModifiedById", "JOHN_LastModifiedById");
-        snippetText.put("prop-LastModifiedDate", "JOHN_LastModifiedDate");
-        //snippetText.Add("prop-SystemModStamp", "JOHN_SystemModStamp");
-        snippetText.put("prop-OwnerId", "JOHN_OwnerId");
-    }
-
-    /**
-     *
-     * @param message
-     */
-    private void debugOut(String message) {
-        String debugFileName = configModel.OutputFolder + "\\Debug.txt";
-
-        try {
-            Date date = new Date();
-            String dateTime = DateToShortDateTimeString(new Date());
-
-            File file = new File(debugFileName);
-            // creates the file
-
-            if (file.exists() == false) {
-                file.createNewFile();
-            }
-
-            // Writes the content to the file
-            try (
-                    // creates a FileWriter Object
-                    FileWriter writer = new FileWriter(file, true)) {
-
-                String debugMessage = String.format("%s ********* %s%s%s", dateTime, NewLine, message, NewLine);
-                // Writes the content to the file
-                writer.write(debugMessage);
-                writer.flush();
-            }
-        } catch (IOException e) {
-        }
-    }
-
-    /**
-     *
-     * @param latestVersionFileList
-     * @param filenameVersionFf
+     * @param itemData
      * @return
      */
-    private int getIndexOf(List<FilenameVersionFf> latestVersionFileList, FilenameVersionFf filenameVersionFf) {
-        if (latestVersionFileList == null) {
-            return -1;
-        }
+    private String GenerateSnippetFilename(ItemData itemData) {
+        String str = itemData.parentClass + "-" + itemData.name;
+        if ((("Methods".equals(itemData.chunkType)) || (ChunkTypes.test.equals(itemData.chunkType))) || (ChunkTypes.webServices.equals(itemData.chunkType))) {
+            if ("".equals(itemData.params.trim())) {
+                return (str + "0");
+            }
+            String[] strArray = itemData.params.toUpperCase().split("\\,");
+            str = String.format("%s%d", str, strArray.length);
 
-        int index = -1;
-        for (FilenameVersionFf file : latestVersionFileList) {
-            if (file.name.equals(filenameVersionFf.name)) {
-                index = latestVersionFileList.indexOf(file);
+            for (String item : strArray) {
+                String tempStr
+                        = item.replace(" ", ".")
+                        .replace("<", ".")
+                        .replace("[", ".")
+                        .replace(">", "")
+                        .replace("]", "")
+                        .replace("DATE", "D.T")
+                        .replace("SOBJECT", "S.");
+
+                //if (tempStr != item)
+                //{
+                //    Console.WriteLine("");    
+                //}
+                String[] strArray2 = tempStr.split("\\.");
+
+                for (String fileName : strArray2) {
+                    if (fileName.trim().equals("") == false) {
+                        char firstChar = fileName.charAt(0);
+                        str = String.format("%s%c", str, firstChar);
+                    }
+                }
             }
         }
-        return index;
+        return str;
     }
+    
+    /**
+     * Given a chunk type, this routine works out which output path corresponds
+     * to it
+     *
+     * @param chunkType
+     * @return
+     */
+    private String getChunkTypePath(String chunkType) {
+        String sResult = "";
+
+        if (chunkType.equals(ChunkTypes.classChunk)) {
+            sResult = "../Types/";
+        }
+        if (chunkType.equals(ChunkTypes.enumChunk)) {
+            sResult = "../Enums/";
+        }
+        if (chunkType.equals(ChunkTypes.method)) {
+            sResult = "../Services/";
+        }
+        if (chunkType.equals(ChunkTypes.test)) {
+            sResult = "../Tests/";
+        }
+        if (chunkType.equals(ChunkTypes.unknown)) {
+            sResult = "../Unknown/";
+        }
+
+        return sResult;
+    }
+    
+    /**
+     * This routine takes the supplied text and converts any placeholder's
+     * ('[%<Name>%]' to uppercase (making them easier to match in the future)
+     *
+     * @param data
+     * @param alDocPlaceholders
+     * @return
+     */
+    private String FormatPlaceholders(String data, ArrayList<String> alDocPlaceholders) {
+        StringBuilder sbResult = new StringBuilder();
+
+        while (data.contains("[%")) //Loop until we run out of placeholders...
+        {
+            //Add everything *up to* the placeholder to the output data
+            sbResult.append(data.substring(0, data.indexOf("[%")));
+
+            //Remove everything *up to* the placeholder form the source data
+            data = data.substring(data.indexOf("[%"));
+
+            if (data.contains("%]")) //If the source data contains the *end* of a placeholder...
+            { //...extract the placeholder
+                //Extract the placeholder and convert it to uppercase
+                String sPlaceholder = data.substring(0, data.indexOf("%]") + 2).toUpperCase().trim();
+                data = data.substring(data.indexOf("%]") + 2);
+
+                sbResult.append(sPlaceholder); //Add the placeholder to the output data
+
+                if (alDocPlaceholders != null) //Are we building a list of 'DOC' placeholders?
+                {
+                    //Yes - Add this to the list (Assuming that it's a 'DOC' placeholder of course)
+                    if (sPlaceholder.startsWith("[%DOC:") && (alDocPlaceholders.indexOf(sPlaceholder) < 0)) {
+                        alDocPlaceholders.add(sPlaceholder);
+                    }
+                }
+            }
+        }
+
+        sbResult.append(data); //Add any remaining data to the output
+
+        return sbResult.toString();
+    }
+    
+    //</editor-fold>
+    
+    // <editor-fold defaultstate="collapsed" desc="**************** Data processing ********************">
 
     /**
      * Given a set of data, this routine works out the next 'chunk' is i.e.
@@ -1143,6 +1173,146 @@ public class Documenter {
     }
 
     /**
+     *
+     * @param data
+     * @param removeComments
+     * @return
+     */
+    private String preProcessComments(String data, boolean removeComments) {
+        int startIndex;
+        int length;
+        String str;
+        String str2;
+        String str3;
+
+        for (startIndex = 0; data.indexOf("//", startIndex) != -1; startIndex = str.length() + str3.length()) {
+            length = data.indexOf("//", startIndex);
+            str = data.substring(0, length);
+            if (data.indexOf("\n", data.indexOf("//")) != -1) {
+                str3 = data.substring(length);
+                str3 = str3.substring(0, str3.indexOf("\n"));
+                str2 = data.substring(data.indexOf("\n", length));
+            } else {
+                str2 = "";
+                str3 = data.substring(length);
+            }
+            str3 = str3.replace("{", "(").replace("}", ")").replace(";", " ").replace("//*", "// *");
+            if (removeComments) {
+                str3 = "";
+            }
+            data = str + str3 + str2;
+        }
+        for (startIndex = 0; data.indexOf("/*", startIndex) != -1; startIndex = str.length() + str3.length()) {
+            length = data.indexOf("/*", startIndex);
+            str = data.substring(0, length);
+            if (data.indexOf("*/", length) != -1) {
+                str3 = data.substring(length);
+                str3 = str3.substring(0, str3.indexOf("*/"));
+                str2 = data.substring(data.indexOf("*/", length));
+            } else {
+                str2 = "";
+                str3 = data.substring(length);
+            }
+            str3 = str3.replace("{", "(").replace("}", ")").replace(";", " ");
+            if (removeComments) {
+                str3 = "";
+            }
+            data = str + str3 + str2;
+        }
+        return data;
+    }
+    
+    //</editor-fold>
+        
+    //<editor-fold defaultstate="collapsed" desc="**************** Extract object data ****************">
+
+    /**
+     * Given a set of data and a piece of text to search for, this routine
+     * attempts to work out the name of the data (e.g. method name, parameter
+     * name)
+     *
+     * @param newItem
+     * @param findText
+     * @return
+     */
+    private String extractItemName(ItemData newItem, String findText) {
+        String sData = newItem.chunkData;
+
+        //Does the data contain the string that we're looking for?
+        if (!sData.toUpperCase().contains(findText.toUpperCase())) {
+            return "";
+        }
+        //Extract the data *after* the text that we're looking for
+        sData = sData.substring(sData.toUpperCase().indexOf(findText.toUpperCase().trim() + " ") + (findText.trim().length() + 1)).trim();
+
+        if (sData.contains(" ")) {
+            //Yes - Get everything up to the first space
+            sData = sData.substring(0, sData.indexOf(" ")).trim();
+        } else {
+            //No - Check for a '{'...and use everything up to the '{'
+            if (sData.contains("{")) {
+                sData = sData.substring(0, sData.indexOf("{") - 1);
+            }
+        }
+        return sData;
+    }
+
+    /**
+     * Given a text string, this routine returns the section of text up to the
+     * supplied position. As well as this it also removes that section of text
+     * from the original text
+     *
+     * @param data
+     * @param toPos
+     * @return
+     */
+    private String extractText(RefObject<String> data, int toPos) {
+        String sResult = "";
+
+        //Is the position past the end of the source text?
+        if (toPos >= data.argvalue.length()) {
+            sResult = data.argvalue;
+            data.argvalue = "";
+        } else {
+            //No - Return only the section of text we were asked for
+            if (toPos >= 0) {
+                //Extract the text...
+                sResult = data.argvalue.substring(0, toPos + 1).trim();
+
+                //...and remove it form the source text
+                data.argvalue = data.argvalue.substring(toPos + 1).trim();
+            }
+        }
+
+        return sResult;
+    }
+
+    /**
+     * Given a text string (containing something like a method or list
+     * definition) this routine works out the return type
+     *
+     * @param data
+     * @return
+     */
+    private String extractReturnType(String data) {
+        if (data.endsWith(">")) {
+            String str = data.substring(data.indexOf("<")).trim();
+            data = data.substring(0, data.indexOf("<")).trim();
+
+            if (data.contains(" ")) {
+                str = data.substring(data.lastIndexOf(" ")).trim() + str;
+            } else {
+                str = data.trim() + str;
+            }
+            return str.replace(" ", "").replace(",", ", ");
+        }
+        if (data.contains(" ")) {
+            return data.substring(data.lastIndexOf(" ")).trim();
+        }
+        return "[CONSTRUCTOR]";
+    }
+    
+    /**
      * Given a set of object data containing a class, this routine extracts the
      * class name and whether it extends another class
      *
@@ -1369,205 +1539,9 @@ public class Documenter {
         return newItem;
     }
 
-    /**
-     *
-     * @param data
-     * @param removeComments
-     * @return
-     */
-    private String preProcessComments(String data, boolean removeComments) {
-        int startIndex;
-        int length;
-        String str;
-        String str2;
-        String str3;
-
-        for (startIndex = 0; data.indexOf("//", startIndex) != -1; startIndex = str.length() + str3.length()) {
-            length = data.indexOf("//", startIndex);
-            str = data.substring(0, length);
-            if (data.indexOf("\n", data.indexOf("//")) != -1) {
-                str3 = data.substring(length);
-                str3 = str3.substring(0, str3.indexOf("\n"));
-                str2 = data.substring(data.indexOf("\n", length));
-            } else {
-                str2 = "";
-                str3 = data.substring(length);
-            }
-            str3 = str3.replace("{", "(").replace("}", ")").replace(";", " ").replace("//*", "// *");
-            if (removeComments) {
-                str3 = "";
-            }
-            data = str + str3 + str2;
-        }
-        for (startIndex = 0; data.indexOf("/*", startIndex) != -1; startIndex = str.length() + str3.length()) {
-            length = data.indexOf("/*", startIndex);
-            str = data.substring(0, length);
-            if (data.indexOf("*/", length) != -1) {
-                str3 = data.substring(length);
-                str3 = str3.substring(0, str3.indexOf("*/"));
-                str2 = data.substring(data.indexOf("*/", length));
-            } else {
-                str2 = "";
-                str3 = data.substring(length);
-            }
-            str3 = str3.replace("{", "(").replace("}", ")").replace(";", " ");
-            if (removeComments) {
-                str3 = "";
-            }
-            data = str + str3 + str2;
-        }
-        return data;
-    }
-
-    /**
-     * Given a set of data and a piece of text to search for, this routine
-     * attempts to work out the name of the data (e.g. method name, parameter
-     * name)
-     *
-     * @param newItem
-     * @param findText
-     * @return
-     */
-    private String extractItemName(ItemData newItem, String findText) {
-        String sData = newItem.chunkData;
-
-        //Does the data contain the string that we're looking for?
-        if (!sData.toUpperCase().contains(findText.toUpperCase())) {
-            return "";
-        }
-        //Extract the data *after* the text that we're looking for
-        sData = sData.substring(sData.toUpperCase().indexOf(findText.toUpperCase().trim() + " ") + (findText.trim().length() + 1)).trim();
-
-        if (sData.contains(" ")) {
-            //Yes - Get everything up to the first space
-            sData = sData.substring(0, sData.indexOf(" ")).trim();
-        } else {
-            //No - Check for a '{'...and use everything up to the '{'
-            if (sData.contains("{")) {
-                sData = sData.substring(0, sData.indexOf("{") - 1);
-            }
-        }
-        return sData;
-    }
-
-    /**
-     * Given a text string, this routine returns the section of text up to the
-     * supplied position. As well as this it also removes that section of text
-     * from the original text
-     *
-     * @param data
-     * @param toPos
-     * @return
-     */
-    private String extractText(RefObject<String> data, int toPos) {
-        String sResult = "";
-
-        //Is the position past the end of the source text?
-        if (toPos >= data.argvalue.length()) {
-            sResult = data.argvalue;
-            data.argvalue = "";
-        } else {
-            //No - Return only the section of text we were asked for
-            if (toPos >= 0) {
-                //Extract the text...
-                sResult = data.argvalue.substring(0, toPos + 1).trim();
-
-                //...and remove it form the source text
-                data.argvalue = data.argvalue.substring(toPos + 1).trim();
-            }
-        }
-
-        return sResult;
-    }
-
-    /**
-     * Given a text string (containing something like a method or list
-     * definition) this routine works out the return type
-     *
-     * @param data
-     * @return
-     */
-    private String extractReturnType(String data) {
-        if (data.endsWith(">")) {
-            String str = data.substring(data.indexOf("<")).trim();
-            data = data.substring(0, data.indexOf("<")).trim();
-
-            if (data.contains(" ")) {
-                str = data.substring(data.lastIndexOf(" ")).trim() + str;
-            } else {
-                str = data.trim() + str;
-            }
-            return str.replace(" ", "").replace(",", ", ");
-        }
-        if (data.contains(" ")) {
-            return data.substring(data.lastIndexOf(" ")).trim();
-        }
-        return "[CONSTRUCTOR]";
-    }
-
-    /**
-     * Given a text string and a pattern to find this routine returns the number
-     * of instances of the pattern in the text
-     *
-     * @param text
-     * @param pattern
-     * @return
-     */
-    private int textCount(String text, String pattern) {
-        int iCount = 0;
-        int iIndex = 0;
-
-        //Loop until we can't find any more instances of the pattern...
-        while ((iIndex = text.indexOf(pattern, iIndex)) != -1) {
-            iIndex += pattern.length();
-            iCount += 1;
-        }
-        //All done, return how many instances we found
-        return iCount;
-    }
-
-    /**
-     * This routine takes the supplied text and converts any placeholder's
-     * ('[%<Name>%]' to uppercase (making them easier to match in the future)
-     *
-     * @param data
-     * @param alDocPlaceholders
-     * @return
-     */
-    private String FormatPlaceholders(String data, ArrayList<String> alDocPlaceholders) {
-        StringBuilder sbResult = new StringBuilder();
-
-        while (data.contains("[%")) //Loop until we run out of placeholders...
-        {
-            //Add everything *up to* the placeholder to the output data
-            sbResult.append(data.substring(0, data.indexOf("[%")));
-
-            //Remove everything *up to* the placeholder form the source data
-            data = data.substring(data.indexOf("[%"));
-
-            if (data.contains("%]")) //If the source data contains the *end* of a placeholder...
-            { //...extract the placeholder
-                //Extract the placeholder and convert it to uppercase
-                String sPlaceholder = data.substring(0, data.indexOf("%]") + 2).toUpperCase().trim();
-                data = data.substring(data.indexOf("%]") + 2);
-
-                sbResult.append(sPlaceholder); //Add the placeholder to the output data
-
-                if (alDocPlaceholders != null) //Are we building a list of 'DOC' placeholders?
-                {
-                    //Yes - Add this to the list (Assuming that it's a 'DOC' placeholder of course)
-                    if (sPlaceholder.startsWith("[%DOC:") && (alDocPlaceholders.indexOf(sPlaceholder) < 0)) {
-                        alDocPlaceholders.add(sPlaceholder);
-                    }
-                }
-            }
-        }
-
-        sbResult.append(data); //Add any remaining data to the output
-
-        return sbResult.toString();
-    }
-
+    //</editor-fold>
+    
+    //<editor-fold defaultstate="collapsed" desc="**************** File generation ********************">
     /**
      *
      * @param tocList
@@ -1713,8 +1687,67 @@ public class Documenter {
         } catch (IOException e) {
         }
     }
+    //</editor-fold>
+    
+    // <editor-fold defaultstate="collapsed" desc="**************** Helper methods ********************">
 
     /**
+     * Given a text string and a pattern to find this routine returns the number
+     * of instances of the pattern in the text
+     *
+     * @param text
+     * @param pattern
+     * @return
+     */
+    private int textCount(String text, String pattern) {
+        int iCount = 0;
+        int iIndex = 0;
+
+        //Loop until we can't find any more instances of the pattern...
+        while ((iIndex = text.indexOf(pattern, iIndex)) != -1) {
+            iIndex += pattern.length();
+            iCount += 1;
+        }
+        //All done, return how many instances we found
+        return iCount;
+    }
+    
+    /**
+     *
+     */
+    private void populateSnippetText() {
+        // Add some elements to the dictionary. 
+        snippetText.put("prop-Id", "JOHN_101");
+        snippetText.put("prop-IsDeleted", "JOHN_YES");
+        snippetText.put("prop-CreatedById", "JOHN_CreatedBy");
+        snippetText.put("prop-CreatedDate", "JOHN_Created_Date");
+        snippetText.put("prop-LastModifiedById", "JOHN_LastModifiedById");
+        snippetText.put("prop-LastModifiedDate", "JOHN_LastModifiedDate");
+        //snippetText.Add("prop-SystemModStamp", "JOHN_SystemModStamp");
+        snippetText.put("prop-OwnerId", "JOHN_OwnerId");
+    }
+    
+    /**
+     * Look to see if we have seen this file before and return its index
+     * @param latestVersionFileList
+     * @param filenameVersionFf
+     * @return
+     */
+    private int getIndexOf(List<FilenameVersionFf> latestVersionFileList, FilenameVersionFf filenameVersionFf) {
+        if (latestVersionFileList == null) {
+            return -1;
+        }
+
+        int index = -1;
+        for (FilenameVersionFf file : latestVersionFileList) {
+            if (file.name.equals(filenameVersionFf.name)) {
+                index = latestVersionFileList.indexOf(file);
+            }
+        }
+        return index;
+    }
+    
+     /**
      * Given a source file and a destination file, this routine, copies from the
      * source file to the destination file
      *
@@ -1747,74 +1780,61 @@ public class Documenter {
             }
         }
     }
-
+    
     /**
-     * Given a set of delimited text, this routine converts that text into a
-     * list and then uses it to construct a HTML table (with one item in the
-     * list having one row in the output table). The HTML used to construct the
-     * table is that specified in the configuration file
      *
-     * @param outputMethodName
-     * @param data
-     * @return
+     * @param message
      */
-    private String CreateValuesTable(String outputMethodName, String data) {
-        String[] strArray = data.split("\\,");
-        String sHtmlPreEnumTable = configModel.HtmlPreEnumTable;
-        for (String item : strArray) {
-            String newValue;
-            if ("".equals(item.trim())) {
-                newValue = "";
-            } else {
-                configModel.SnippetsList.add(outputMethodName + "-value-" + item.trim());
-                newValue = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-value-" + item.trim() + ".flsnp\" />";
+    private void debugOut(String message) {
+        String debugFileName = configModel.OutputFolder + "\\Debug.txt";
+
+        try {
+            Date date = new Date();
+            String dateTime = DateToShortDateTimeString(new Date());
+
+            File file = new File(debugFileName);
+            // creates the file
+
+            if (file.exists() == false) {
+                file.createNewFile();
             }
-            sHtmlPreEnumTable = sHtmlPreEnumTable + configModel.HtmlLoopEnumTable.replace("[%ENUMVALUE%]", item).replace("[%SNIPPETLINK%]", newValue);
+
+            // Writes the content to the file
+            try (
+                    // creates a FileWriter Object
+                    FileWriter writer = new FileWriter(file, true)) {
+
+                String debugMessage = String.format("%s ********* %s%s%s", dateTime, NewLine, message, NewLine);
+                // Writes the content to the file
+                writer.write(debugMessage);
+                writer.flush();
+            }
+        } catch (IOException e) {
         }
-        return (sHtmlPreEnumTable + configModel.HtmlPostEnumTable);
     }
-
+    
     /**
      *
-     * @param itemData
-     * @return
+     * @param latestVersionFileList
      */
-    private String GenerateSnippetFilename(ItemData itemData) {
-        String str = itemData.parentClass + "-" + itemData.name;
-        if ((("Methods".equals(itemData.chunkType)) || (ChunkTypes.test.equals(itemData.chunkType))) || (ChunkTypes.webServices.equals(itemData.chunkType))) {
-            if ("".equals(itemData.params.trim())) {
-                return (str + "0");
-            }
-            String[] strArray = itemData.params.toUpperCase().split("\\,");
-            str = String.format("%s%d", str, strArray.length);
+    private void dumpFiles(List<FilenameVersionFf> latestVersionFileList) {
+        String filesProcessedFileName = configModel.OutputFolder + "\\FilesProcessed.txt";
 
-            for (String item : strArray) {
-                String tempStr
-                        = item.replace(" ", ".")
-                        .replace("<", ".")
-                        .replace("[", ".")
-                        .replace(">", "")
-                        .replace("]", "")
-                        .replace("DATE", "D.T")
-                        .replace("SOBJECT", "S.");
+        //Does the output file already exist?
+        if ((new File(filesProcessedFileName)).isFile()) {
+            (new File(filesProcessedFileName)).delete();
+        }
 
-                //if (tempStr != item)
-                //{
-                //    Console.WriteLine("");    
-                //}
-                String[] strArray2 = tempStr.split("\\.");
-
-                for (String fileName : strArray2) {
-                    if (fileName.trim().equals("") == false) {
-                        char firstChar = fileName.charAt(0);
-                        str = String.format("%s%c", str, firstChar);
-                    }
+        try {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(filesProcessedFileName))) {
+                for (FilenameVersionFf file : latestVersionFileList) {
+                    writer.write(file.fullName + "\n");
                 }
             }
+        } catch (IOException e) {
         }
-        return str;
     }
-
+    
     /**
      * By using this method it aids porting between languages.
      *
@@ -1887,7 +1907,18 @@ public class Documenter {
             argvalue = refarg;
         }
     }
-
+    
+        /**
+     * Tests for a vowel
+     *
+     * @param sData
+     * @return
+     */
+    private Boolean isVowel(String sData) {
+        sData = sData.toUpperCase().trim();
+        return (sData.startsWith("A") || sData.startsWith("E")) || ((sData.startsWith("I") || sData.startsWith("O")) || sData.startsWith("U"));
+    }
+    
     /**
      *
      */
@@ -1903,8 +1934,11 @@ public class Documenter {
             return lowercaseName.startsWith(configModel.FileFilter.toLowerCase()) && lowercaseName.endsWith(".cls");
         }
     }
+    // </editor-fold>
 
-    /**
+    //<editor-fold defaultstate="collapsed" desc="**************** Creation methods *******************">
+
+     /**
      * Given a set of data, this routine builds an output HTML structure
      * detailing the parameters, types, hyperlinks (where necessary) etc.
      *
@@ -2049,67 +2083,6 @@ public class Documenter {
             }
         }
         return htmlPreParamTable;
-    }
-
-    /**
-     * Given a name, chunk type and instance, this routine builds a hyperlink to
-     * the corresponding help file
-     *
-     * @param sName
-     * @param sChunkType
-     * @param iInstance
-     * @return
-     */
-    private String buildUsedByLink(String sName, String sChunkType, int iInstance) {
-        String sLink = sName.trim();
-
-        if (sLink.contains(".")) //If the thing is within something else...
-        {
-            sLink = sLink.substring(sLink.lastIndexOf(".") + 1).trim();	//...get *only* the thing  
-        }
-        sLink = getChunkTypePath(sChunkType) + sLink + (new Integer(iInstance)).toString() + DefFileExt;
-
-        return sLink;
-    }
-
-    /**
-     *
-     * @param methodType
-     * @param usedByName
-     * @param usedByInstance
-     * @param usedByChunkType
-     * @param returnType
-     * @param parentClass
-     * @param asText
-     * @return
-     */
-    private String buildReturnLink(Integer methodType, String usedByName, int usedByInstance, String usedByChunkType, String returnType, String parentClass, boolean asText) {
-        String data;
-
-        String methodTypeTxt = "service";
-        if (methodType == 1) {
-            methodTypeTxt = "constructor";
-        }
-        if (methodType == 2) {
-            methodTypeTxt = "web service";
-        }
-        if (asText) {
-//                if(usedByName.contains("CODAAPISalesInvoice_10_0.PostIncomeSchedules"))
-//                    debugOut("QWERTY: ");
-
-            data = buildTypeLink(returnType, parentClass, false, true);
-            if (("VOID".equals(data.toUpperCase().trim())) || ("".equals(data.trim()))) {
-                return String.format("This %s does not return a value.", methodTypeTxt);
-            }
-            if (isVowel(data)) {
-                return String.format("This %s returns an %s.", methodTypeTxt, data);
-            }
-            return String.format("This %s returns a %s.", methodTypeTxt, data);
-        }
-
-        data = buildTypeLink(returnType, parentClass, true, false);
-        storeTypeLink(data, buildUsedByLink(usedByName, usedByChunkType, usedByInstance), usedByName, usedByChunkType);
-        return data;
     }
 
     /**
@@ -2381,10 +2354,10 @@ public class Documenter {
         }
     }
 
-    private String getDocData(String sPlaceholder, String sName, String sParentClass) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    //</editor-fold>
 
+    //<editor-fold defaultstate="collapsed" desc="**************** Html methods ***********************">
+    
     /**
      * Called when we need to store that a type is being used/referenced
      * somewhere in the system, this routine stores the details so that we can
@@ -2548,44 +2521,97 @@ public class Documenter {
 
         return sResult;
     }
-
+    
     /**
-     * Given a chunk type, this routine works out which output path corresponds
-     * to it
+     * Given a set of delimited text, this routine converts that text into a
+     * list and then uses it to construct a HTML table (with one item in the
+     * list having one row in the output table). The HTML used to construct the
+     * table is that specified in the configuration file
      *
-     * @param chunkType
+     * @param outputMethodName
+     * @param data
      * @return
      */
-    private String getChunkTypePath(String chunkType) {
-        String sResult = "";
+    private String CreateValuesTable(String outputMethodName, String data) {
+        String[] strArray = data.split("\\,");
+        String sHtmlPreEnumTable = configModel.HtmlPreEnumTable;
+        for (String item : strArray) {
+            String newValue;
+            if ("".equals(item.trim())) {
+                newValue = "";
+            } else {
+                configModel.SnippetsList.add(outputMethodName + "-value-" + item.trim());
+                newValue = "<MadCap:snippetBlock src=\"../../Resources/Snippets/" + outputMethodName + "-value-" + item.trim() + ".flsnp\" />";
+            }
+            sHtmlPreEnumTable = sHtmlPreEnumTable + configModel.HtmlLoopEnumTable.replace("[%ENUMVALUE%]", item).replace("[%SNIPPETLINK%]", newValue);
+        }
+        return (sHtmlPreEnumTable + configModel.HtmlPostEnumTable);
+    }
+    
+    /**
+     * Given a name, chunk type and instance, this routine builds a hyperlink to
+     * the corresponding help file
+     *
+     * @param sName
+     * @param sChunkType
+     * @param iInstance
+     * @return
+     */
+    private String buildUsedByLink(String sName, String sChunkType, int iInstance) {
+        String sLink = sName.trim();
 
-        if (chunkType.equals(ChunkTypes.classChunk)) {
-            sResult = "../Types/";
+        if (sLink.contains(".")) //If the thing is within something else...
+        {
+            sLink = sLink.substring(sLink.lastIndexOf(".") + 1).trim();	//...get *only* the thing  
         }
-        if (chunkType.equals(ChunkTypes.enumChunk)) {
-            sResult = "../Enums/";
-        }
-        if (chunkType.equals(ChunkTypes.method)) {
-            sResult = "../Services/";
-        }
-        if (chunkType.equals(ChunkTypes.test)) {
-            sResult = "../Tests/";
-        }
-        if (chunkType.equals(ChunkTypes.unknown)) {
-            sResult = "../Unknown/";
-        }
+        sLink = getChunkTypePath(sChunkType) + sLink + (new Integer(iInstance)).toString() + DefFileExt;
 
-        return sResult;
+        return sLink;
     }
 
     /**
-     * Tests for a vowel
      *
-     * @param sData
+     * @param methodType
+     * @param usedByName
+     * @param usedByInstance
+     * @param usedByChunkType
+     * @param returnType
+     * @param parentClass
+     * @param asText
      * @return
      */
-    private Boolean isVowel(String sData) {
-        sData = sData.toUpperCase().trim();
-        return (sData.startsWith("A") || sData.startsWith("E")) || ((sData.startsWith("I") || sData.startsWith("O")) || sData.startsWith("U"));
+    private String buildReturnLink(Integer methodType, String usedByName, int usedByInstance, String usedByChunkType, String returnType, String parentClass, boolean asText) {
+        String data;
+
+        String methodTypeTxt = "service";
+        if (methodType == 1) {
+            methodTypeTxt = "constructor";
+        }
+        if (methodType == 2) {
+            methodTypeTxt = "web service";
+        }
+        if (asText) {
+//                if(usedByName.contains("CODAAPISalesInvoice_10_0.PostIncomeSchedules"))
+//                    debugOut("QWERTY: ");
+
+            data = buildTypeLink(returnType, parentClass, false, true);
+            if (("VOID".equals(data.toUpperCase().trim())) || ("".equals(data.trim()))) {
+                return String.format("This %s does not return a value.", methodTypeTxt);
+            }
+            if (isVowel(data)) {
+                return String.format("This %s returns an %s.", methodTypeTxt, data);
+            }
+            return String.format("This %s returns a %s.", methodTypeTxt, data);
+        }
+
+        data = buildTypeLink(returnType, parentClass, true, false);
+        storeTypeLink(data, buildUsedByLink(usedByName, usedByChunkType, usedByInstance), usedByName, usedByChunkType);
+        return data;
+    }
+        
+    //</editor-fold>
+    
+    private String getDocData(String sPlaceholder, String sName, String sParentClass) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
