@@ -488,7 +488,7 @@ public class Documenter {
             GenerateHtmltoc(tocList, String.format("%s%s", outputFolder, IndexFolder));
         }
         if ((configModel.Toc == 2) || (configModel.Toc == 3)) {
-            GenerateFlareToc(tocList, String.format("%s%s", outputFolder, TocFolder));
+            //GenerateFlareToc(tocList, String.format("%s%s", outputFolder, TocFolder));
         }
     }
 
