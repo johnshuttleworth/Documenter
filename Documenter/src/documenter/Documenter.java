@@ -45,6 +45,7 @@ public class Documenter {
     private Integer excludedFiles = 0;
     private Integer createDocsEnums = 0;
     private Integer createdSnippetFiles = 0;
+    private Integer createDocsInterfaces = 0;
 
     private static final String NewLine = "\n";
 
@@ -147,7 +148,7 @@ public class Documenter {
         generateFiles();
 
         String message = String.format("AllItems: %s Chunks: Processed %s Outputted %s OutputChunkEnum %s ExcludedFiles: %d%s", alItems.size(), processedChunks, outputtedChunks, outputChunkEnum, excludedFiles, NewLine);
-        message += String.format("CreateDocsEnums: %d CreatedSnippetFiles %d OutputChunkProperty %d", createDocsEnums, createdSnippetFiles, outputChunkProperty);
+        message += String.format("CreateDocsInterfaces: %d CreateDocsEnums: %d CreatedSnippetFiles %d OutputChunkProperty %d", createDocsInterfaces, createDocsEnums, createdSnippetFiles, outputChunkProperty);
         debugOut(message);
         System.out.printf(message + NewLine);
     }
@@ -556,6 +557,10 @@ public class Documenter {
                 }
 
                 // This is for debugging
+                if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ChunkTypes.enumChunk == null : docType.equals(ChunkTypes.enumChunk))) {
+                    createDocsInterfaces++;
+                }
+                
                 if ((itemData.chunkType == null ? docType == null : itemData.chunkType.equals(docType)) && (docType == null ? ChunkTypes.enumChunk == null : docType.equals(ChunkTypes.enumChunk))) {
                     createDocsEnums++;
                 }
